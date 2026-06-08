@@ -1185,53 +1185,117 @@
         }
 
         // --- ÁRVORE DE IMPRESSÃO ---
-        function abrirModalPrint() {
-            document.getElementById('modalPrintOverlay').classList.add('active');
-            const container = document.getElementById('printCategoriasCheckboxList');
-            container.innerHTML = '';
+        // --- VERSÃO CORRIGIDA: ABRIR MODAL DE IMPRESSÃO ---
+// --- VERSÃO CORRIGIDA: ABRIR MODAL DE IMPRESSÃO ---
+function abrirModalPrint() {
+    const modal = document.getElementById('modalPrintOverlay');
+    const container = document.getElementById('printCategoriasCheckboxList');
+    
+    if (!modal || !container) {
+        console.error("Erro: Elementos do modal de impressão não encontrados no HTML.");
+        return;
+    }
 
-            let categoriasFiltradasParaArvore = dbCategoriasComplexas;
-            
-            if (perfilAutenticadoGlobal && !perfilAutenticadoGlobal.master) {
-                categoriasFiltradasParaArvore = dbCategoriasComplexas.filter(c => perfilAutenticadoGlobal.categorias.includes(c.nome));
-            } else {
-                const labelMaster = document.createElement('label');
-                labelMaster.className = 'print-selector-item';
-                labelMaster.style.fontWeight = '700';
-                labelMaster.innerHTML = `<input type="checkbox" id="printSelectAllCategoriesTrigger" checked onchange="alternarTodasCategoriasImpressao(this)"><span>🌐 [Selecionar Todo o Inventário]</span>`;
-                container.appendChild(labelMaster);
-                const divider = document.createElement('div'); divider.className = 'print-selector-divider'; container.appendChild(divider);
-            }
+    modal.classList.add('active');
+    container.innerHTML = '';
 
-            categoriasFiltradasParaArvore.forEach((cat, index) => {
-                const catGroupWrap = document.createElement('div');
-                catGroupWrap.style.marginBottom = '6px';
+    // Opção Master
+    const labelMaster = document.createElement('label');
+    labelMaster.className = 'print-selector-item';
+    labelMaster.style.fontWeight = '700';
+    labelMaster.innerHTML = `<input type="checkbox" id="printSelectAllCategoriesTrigger" checked onchange="alternarTodasCategoriasImpressao(this)"><span>🌐 [Selecionar Todo o Inventário]</span>`;
+    container.appendChild(labelMaster);
 
-                const catLabel = document.createElement('label');
-                catLabel.className = 'print-selector-item';
-                catLabel.style.fontWeight = '600';
-                catLabel.innerHTML = `<input type="checkbox" value="${cat.nome}" checked class="print-cat-parent-checkbox" data-cat="${cat.nome}" onchange="alternarFilhosDaCategoria(this)"><span style="width:10px; height:10px; background:${cat.cor}; border-radius:50%; display:inline-block;"></span><span>Diretório: ${cat.nome}</span>`;
-                catGroupWrap.appendChild(catLabel);
+    const divider = document.createElement('div');
+    divider.className = 'print-selector-divider';
+    container.appendChild(divider);
 
-                const itemsBox = document.createElement('div');
-                itemsBox.className = 'items-avulsos-box';
-                itemsBox.id = `items-box-print-${index}`;
+    // Filtra categorias conforme o perfil do usuário
+    let categoriasFiltradas = dbCategoriasComplexas;
+    if (perfilAutenticadoGlobal && !perfilAutenticadoGlobal.master) {
+        categoriasFiltradas = dbCategoriasComplexas.filter(c => perfilAutenticadoGlobal.categorias.includes(c.nome));
+    }
 
-                const itensDaCategoria = dbItems.filter(item => item.categoria === cat.nome);
-                if(itensDaCategoria.length === 0) {
-                    itemsBox.innerHTML = `<div style="font-size:11px; color:#888; padding-left:20px;">Nenhum produto cadastrado</div>`;
-                } else {
-                    itensDaCategoria.forEach(item => {
-                        itemsBox.innerHTML += `
-                            <label class="print-item-avulso-row">
-                                <input type="checkbox" value="${item.id}" checked class="print-item-child-checkbox" data-parent-cat="${cat.nome}" onchange="sincronizarPaiComFilhos('${cat.nome}')">
-                                <span>${item.nome} ${item.marca ? `(${item.marca})` : ''}</span>
-                            </label>`;
-                    });
-                }
-                catGroupWrap.appendChild(itemsBox); container.appendChild(catGroupWrap);
-            });
-        }
+    categoriasFiltradas.forEach((cat, index) => {
+        const catGroupWrap = document.createElement('div');
+        catGroupWrap.style.marginBottom = '6px';
+        catGroupWrap.innerHTML = `
+            <label class="print-selector-item" style="font-weight: 600;">
+                <input type="checkbox" value="${cat.nome}" checked class="print-cat-parent-checkbox" data-cat="${cat.nome}" onchange="alternarFilhosDaCategoria(this)">
+                <span style="width:10px; height:10px; background:${cat.cor}; border-radius:50%; display:inline-block;"></span>
+                <span>Diretório: ${cat.nome}</span>
+            </label>
+            <div class="items-avulsos-box" id="items-box-print-${index}"></div>
+        `;
+        container.appendChild(catGroupWrap);
+
+        const itemsBox = catGroupWrap.querySelector('.items-avulsos-box');
+        const itensDaCategoria = dbItems.filter(item => item.categoria === cat.nome);
+        
+        itensDaCategoria.forEach(item => {
+            itemsBox.innerHTML += `
+                <label class="print-item-avulso-row">
+                    <input type="checkbox" value="${item.id}" checked class="print-item-child-checkbox" data-parent-cat="${cat.nome}" onchange="sincronizarPaiComFilhos('${cat.nome}')">
+                    <span>${item.nome} ${item.marca ? `(${item.marca})` : ''}</span>
+                </label>`;
+        });
+    });
+}
+
+// --- VERSÃO CORRIGIDA: MOTOR DE IMPRESSÃO ---
+function executarMotorImpressao() {
+    const statusFiltro = document.getElementById('printFiltroStatus').value;
+    const checkboxesFilhos = document.querySelectorAll('.print-item-child-checkbox');
+    const idsItensAutorizados = [];
+    
+    checkboxesFilhos.forEach(cb => { if(cb.checked) idsItensAutorizados.push(parseInt(cb.value)); });
+
+    if (idsItensAutorizados.length === 0) {
+        alert("Selecione ao menos um ativo na lista para imprimir.");
+        return;
+    }
+
+    const tbody = document.getElementById('printSystemTableBody'); 
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    document.getElementById('printSystemTimestamp').textContent = `Emitido em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`;
+
+    let count = 0;
+    dbItems.forEach(item => {
+        const critico = item.atual < item.minimo;
+        if (!idsItensAutorizados.includes(item.id)) return;
+        if (statusFiltro === 'criticos' && !critico) return;
+        if (statusFiltro === 'ok' && critico) return;
+
+        count++;
+        const imgCellContent = item.foto ? `<div class="print-img-box"><img src="${item.foto}"></div>` : `<div class="print-img-box"><span>${obterIconeAutomatico(item.nome)}</span></div>`;
+
+        tbody.innerHTML += `
+            <tr>
+                <td class="col-print-img">${imgCellContent}</td>
+                <td class="col-print-cod"><b>${item.codigo || '—'}</b></td>
+                <td class="col-print-desc"><strong>${item.nome}</strong><br><small style="font-size:8px;">Marca: ${item.marca || 'Genérica'}</small></td>
+                <td class="col-print-cat">${item.categoria}</td>
+                <td class="col-print-un">${item.unidade}</td>
+                <td class="col-print-forn">${item.fornecedor || '—'}</td>
+                <td class="col-print-num" style="font-weight:bold;">${item.atual}</td>
+                <td class="col-print-num">${item.minimo}</td>
+                <td class="field-blank">___________</td>
+                <td class="field-blank">___________</td>
+            </tr>`;
+    });
+
+    if(count === 0) {
+        alert("Nenhum item localizado com os filtros selecionados.");
+        return;
+    }
+
+    fecharModal('modalPrintOverlay');
+    
+    // Pequeno atraso para garantir que o DOM renderizou a tabela antes de chamar o print
+    setTimeout(() => { window.print(); }, 500);
+}
 
         function alternarFilhosDaCategoria(paiCheckbox) {
             const catNome = paiCheckbox.getAttribute('data-cat');
