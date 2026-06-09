@@ -725,6 +725,7 @@
         let html5QrcodeScanner = null;
         let objQrCode = null;
         let emAuditoria = false;
+	let loopSincronismo = null;
 
         // --- GOOGLE ENGINE SYNC ---
         async function carregarDadosDaNuvem() {
@@ -773,7 +774,44 @@
             const packagePayload = { items: dbItems, locais: dbLocais, categories: dbCategoriasComplexas, units: dbUnidades, suppliers: dbFornecedores, history: dbHistorico, profiles: dbPerfisAcesso };
             try { await fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" }, body: JSON.stringify(packagePayload) }); } catch (error) { console.error(error); }
         }
+	
+	async function sincronismoSilencioso() {
+    		// 1. TRAVA DE SEGURANÇA: Se o usuário estiver com a câmera aberta, fazendo auditoria, 
+   		// ou editando um item, o sistema NÃO atualiza o fundo para não apagar o que ele está digitando.
+   		if (emAuditoria || document.querySelector('.modal-overlay.active')) return;
 
+    	if (GOOGLE_SCRIPT_URL === "SUA_URL_DO_GOOGLE_SCRIPT_AQUI") return;
+
+  	  try {
+      	  	const response = await fetch(GOOGLE_SCRIPT_URL);
+        	const cloudData = await response.json();
+
+        if (cloudData && cloudData.items) {
+            // 2. A MÁGICA DA COMPARAÇÃO: Transformamos o banco atual e o banco da nuvem em texto.
+            const localString = JSON.stringify(dbItems);
+            const nuvemString = JSON.stringify(cloudData.items);
+
+            // 3. SÓ ATUALIZA A TELA SE HOUVE MUDANÇA REAL
+            // Isso evita que a tela do usuário fique "piscando" a cada 10 segundos sem necessidade.
+            if (localString !== nuvemString) {
+                dbItems = cloudData.items;
+                dbLocais = cloudData.locais || dbLocais;
+                dbHistorico = cloudData.history || dbHistorico;
+                
+                renderEstoque(); // Redesenha os cards com a nova quantidade
+                console.log("Atualização recebida de outro dispositivo!");
+            }
+        }
+    } catch (error) {
+        // Erros de rede no fundo são ignorados silenciosamente para não assustar o usuário
+        console.log("Falha no sincronismo de fundo. Tentando novamente no próximo ciclo.");
+    }
+}
+	
+	function iniciarTempoReal() {
+    // 10000 = 10 segundos. O sistema vai rodar a função silenciosa a cada 10 segundos.
+    loopSincronismo = setInterval(sincronismoSilencioso, 10000);
+}
         function obterIconeAutomatico(nome) {
             const n = nome ? nome.toLowerCase() : '';
             if(n.includes('papel') || n.includes('caderno')) return '📄';
@@ -781,7 +819,7 @@
             if(n.includes('detergente') || n.includes('sabão')) return '🧼';
             if(n.includes('cabo') || n.includes('fio')) return '🔌';
             return '📦';
-        }
+}
 
         // 🟢 ══════════ GESTÃO DE LOCAIS / CAIXAS ══════════
         function renderLocais() {
@@ -1002,19 +1040,23 @@
 
         // --- CONTROLE DE ACESSO AVANÇADO (RBAC) ---
         function verificarCredenciaisAcesso() {
-            const pinDigitado = document.getElementById('userAccessPinInput').value.trim();
-            const perfilEncontrado = dbPerfisAcesso.find(p => p.pin === pinDigitado);
+    		const pinDigitado = document.getElementById('userAccessPinInput').value.trim();
+   		 const perfilEncontrado = dbPerfisAcesso.find(p => p.pin === pinDigitado);
 
-            if (perfilEncontrado) {
-                perfilAutenticadoGlobal = perfilEncontrado;
-                document.getElementById('loginGatewayScreen').style.display = 'none';
-                document.getElementById('userPerfilActiveLabel').textContent = perfilEncontrado.nome;
-                aplicarFiltrosEPolíticasDeSeguranca();
-            } else {
-                const err = document.getElementById('loginErrorMessage');
-                err.style.display = 'block'; setTimeout(() => { err.style.display = 'none'; }, 3000);
-            }
-        }
+    if (perfilEncontrado) {
+        perfilAutenticadoGlobal = perfilEncontrado;
+        document.getElementById('loginGatewayScreen').style.display = 'none';
+        document.getElementById('userPerfilActiveLabel').textContent = perfilEncontrado.nome;
+        aplicarFiltrosEPolíticasDeSeguranca();
+        
+        
+        iniciarTempoReal(); 
+        
+    } else {
+        const err = document.getElementById('loginErrorMessage');
+        err.style.display = 'block'; setTimeout(() => { err.style.display = 'none'; }, 3000);
+    }
+}
 
         function aplicarFiltrosEPolíticasDeSeguranca() {
             if (!perfilAutenticadoGlobal) return;
