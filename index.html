@@ -58,13 +58,19 @@
         }
 
         * { box-sizing: border-box; font-family: 'DM Sans', sans-serif; margin: 0; padding: 0; }
-        body { background-color: var(--bg); color: var(--ink); display: flex; height: 100vh; overflow: hidden; transition: background .3s, color .3s; }
+        body { background-color: var(--bg); color: var(--ink); display: flex; flex-direction: column; height: 100vh; overflow: hidden; transition: background .3s, color .3s; }
 
         body::before {
             content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: radial-gradient(circle at 80% 20%, var(--dinamica-categoria) 0%, transparent 50%);
             z-index: -1; pointer-events: none; transition: all 0.6s ease;
         }
+
+        /* --- BARRA DE STATUS DE AUDITORIA --- */
+        .audit-status-bar { display: none; background: var(--amber); color: #000; padding: 10px 40px; font-weight: bold; justify-content: space-between; align-items: center; z-index: 1001; position: relative; }
+        body.in-audit .audit-status-bar { display: flex; }
+
+        .layout-wrapper { display: flex; flex: 1; overflow: hidden; }
 
         /* --- TELA DE LOGIN --- */
         .login-overlay { position: fixed; inset: 0; background: #070a12; z-index: 9999; display: flex; align-items: center; justify-content: center; }
@@ -107,6 +113,7 @@
         .btn-secundario:hover { background: var(--card2); }
         .btn-icon { background: none; border: none; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; color: var(--ink); transition: transform 0.2s; }
         .btn-icon:hover { transform: scale(1.1); }
+        .btn-sucesso { background: var(--green); color: white; }
 
         /* 🟢 BOTÃO FLUTUANTE DA CÂMERA (SCANNER) */
         .floating-scan-btn { position: fixed; bottom: 30px; right: 30px; width: 65px; height: 65px; border-radius: 50%; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-size: 28px; cursor: pointer; box-shadow: 0 4px 15px rgba(0, 67, 156, 0.4); z-index: 1000; transition: transform 0.2s; }
@@ -145,7 +152,7 @@
         .badge-ok { background: var(--green-bg); color: var(--green); }
         .badge-comprar { background: var(--red-bg); color: var(--red); }
 
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(7, 10, 18, 0.8); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 5000; opacity: 1; transition: opacity 0.2s ease; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(7, 10, 18, 0.6); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 5000; opacity: 1; transition: opacity 0.2s ease; }
         .modal-overlay.active { display: flex; }
         .modal-content { background: var(--card); border: 1px solid var(--border); border-radius: 20px; width: 100%; max-width: 600px; padding: 32px; box-shadow: var(--shadow); max-height: 90vh; overflow-y: auto; }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
@@ -168,7 +175,6 @@
         .sub-form-inline .inline-inputs { display: flex; gap: 8px; flex-wrap: wrap; }
         .sub-form-inline .inline-inputs input { flex: 1; min-width: 120px; padding: 8px 10px; font-size: 12px; }
 
-        /* Seletores de Matriz de Permissões / Impressão */
         .print-selector-container { max-height: 160px; overflow-y: auto; border: 1px solid var(--border); padding: 12px; border-radius: 8px; background: var(--card2); display: flex; flex-direction: column; gap: 8px; }
         .print-selector-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; cursor: pointer; }
         .print-selector-item input { width: 16px; height: 16px; cursor: pointer; }
@@ -214,11 +220,9 @@
         .area-exclusiva-qr-print { display: none; }
 
         @media print {
-            /* Se estiver imprimindo Relatório (Lista) */
             body.printing-list > * { display: none !important; }
             body.printing-list .area-exclusiva-impressao { display: block !important; width: 100%; margin: 0; background: #fff; color: #000; }
             
-            /* Se estiver imprimindo Etiqueta (QR) */
             body.printing-qr > * { display: none !important; }
             body.printing-qr .area-exclusiva-qr-print { display: flex !important; justify-content: center; align-items: center; width: 100%; height: 100vh; background: #fff; }
             
@@ -246,7 +250,7 @@
 
         /* ══════════ RESPONSIVIDADE (MOBILE) ══════════ */
         @media (max-width: 768px) {
-            body { flex-direction: column; overflow-y: auto; }
+            .layout-wrapper { flex-direction: column; overflow-y: auto; }
             .sidebar { width: 100%; height: auto; padding: 20px; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; }
             .user-badge { display: none; }
             .menu-list { flex-direction: row; width: 100%; justify-content: space-around; margin-top: 15px; }
@@ -270,6 +274,11 @@
 </head>
 <body data-theme="light">
 
+    <div class="audit-status-bar" id="auditStatusBar">
+        <span>⚠️ AUDITORIA EM ANDAMENTO</span>
+        <button class="btn btn-sucesso" style="padding:8px 15px;" onclick="finalizarRelatorioAuditoria()">CONCLUIR E SALVAR</button>
+    </div>
+
     <div class="login-overlay" id="loginGatewayScreen">
         <div class="login-box">
             <h2>TECSERVICE Enterprise</h2>
@@ -280,148 +289,160 @@
         </div>
     </div>
 
-    <nav class="sidebar area-normal-sistema">
-        <div>
-            <div class="brand">TECSERVICE <span>• Pro</span></div>
-            <div class="user-badge">Perfil: <b id="userPerfilActiveLabel">Carregando...</b></div>
-            <ul class="menu-list">
-                <li class="menu-item active" id="menuEstoque" onclick="navegar('estoque')">📦 Estoque Central</li>
-                <li class="menu-item" id="menuHistorico" onclick="navegar('historico')">📜 Histórico Compras</li>
-                <li class="menu-item" id="menuConfig" onclick="navegar('config')">⚙️ Configurações</li>
-            </ul>
-        </div>
-        <button class="theme-toggle-btn" onclick="alternarTemaGlobal()">🌓 Mudar Aparência</button>
-    </nav>
-
-    <main class="main-content area-normal-sistema">
-        <header class="topbar">
-            <div class="page-title">
-                <h2 id="txtTopTitulo">Estoque Central</h2>
-                <p id="txtTopDesc">Auditoria de ativos e inteligência logística</p>
+    <div class="layout-wrapper">
+        <nav class="sidebar area-normal-sistema">
+            <div>
+                <div class="brand">TECSERVICE <span>• Pro</span></div>
+                <div class="user-badge">Perfil: <b id="userPerfilActiveLabel">Carregando...</b></div>
+                <ul class="menu-list">
+                    <li class="menu-item active" id="menuEstoque" onclick="navegar('estoque')">📦 Estoque Central</li>
+                    <li class="menu-item" id="menuLocais" onclick="navegar('locais')">📍 Locais/Caixas</li>
+                    <li class="menu-item" id="menuHistorico" onclick="navegar('historico')">📜 Histórico Compras</li>
+                    <li class="menu-item" id="menuConfig" onclick="navegar('config')">⚙️ Configurações</li>
+                </ul>
             </div>
-            <div class="topbar-actions" id="topbarActionsArea">
-                <button class="btn btn-secundario" onclick="abrirModalPrint()">🖨️ Opções de Impressão</button>
-                <button class="btn btn-primario" id="btnActionNovoAtivoTop" onclick="abrirModalItem()">➕ Novo Ativo</button>
-            </div>
-        </header>
+            <button class="theme-toggle-btn" onclick="alternarTemaGlobal()">🌓 Mudar Aparência</button>
+        </nav>
 
-        <section id="paneEstoque" class="view-pane active">
-            <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Buscar por código, nome, marca ou caixa..." oninput="renderEstoque()">
-            
-            <div class="dashboard-grid" id="dashboardFinanceiroGridContainer">
-                <div class="metric-card" style="border-left: 4px solid var(--green);">
-                    <h3>Patrimônio em Estoque</h3>
-                    <p id="dashPatrimonio" style="color: var(--green);">R$ 0,00</p>
+        <main class="main-content area-normal-sistema">
+            <header class="topbar">
+                <div class="page-title">
+                    <h2 id="txtTopTitulo">Estoque Central</h2>
+                    <p id="txtTopDesc">Auditoria de ativos e inteligência logística</p>
                 </div>
-                <div class="metric-card" style="border-left: 4px solid var(--amber);">
-                    <h3>Budget de Reposição</h3>
-                    <p id="dashBudget" style="color: var(--amber);">R$ 0,00</p>
+                <div class="topbar-actions" id="topbarActionsArea">
+                    <button class="btn btn-secundario" onclick="iniciarRelatorioAuditoria()">📋 Iniciar Auditoria</button>
+                    <button class="btn btn-secundario" onclick="abrirModalPrint()">🖨️ Opções de Impressão</button>
+                    <button class="btn btn-primario" id="btnActionNovoAtivoTop" onclick="abrirModalItem()">➕ Novo Ativo</button>
                 </div>
-                <div class="metric-card">
-                    <h3>Ativos Cadastrados</h3>
-                    <p id="dashTotal">0</p>
+            </header>
+
+            <section id="paneEstoque" class="view-pane active">
+                <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Buscar por código, nome, marca ou caixa..." oninput="renderEstoque()">
+                
+                <div class="dashboard-grid" id="dashboardFinanceiroGridContainer">
+                    <div class="metric-card" style="border-left: 4px solid var(--green);">
+                        <h3>Patrimônio em Estoque</h3>
+                        <p id="dashPatrimonio" style="color: var(--green);">R$ 0,00</p>
+                    </div>
+                    <div class="metric-card" style="border-left: 4px solid var(--amber);">
+                        <h3>Budget de Reposição</h3>
+                        <p id="dashBudget" style="color: var(--amber);">R$ 0,00</p>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Ativos Cadastrados</h3>
+                        <p id="dashTotal">0</p>
+                    </div>
+                    <div class="metric-card" style="border-left: 4px solid var(--red);">
+                        <h3>Alertas Críticos</h3>
+                        <p id="dashCriticos" style="color: var(--red);">0</p>
+                    </div>
                 </div>
-                <div class="metric-card" style="border-left: 4px solid var(--red);">
-                    <h3>Alertas Críticos</h3>
-                    <p id="dashCriticos" style="color: var(--red);">0</p>
+
+                <div class="filtros-wrapper" id="filtrosContainer"></div>
+                <div class="produtos-lista" id="renderEstoqueRow"></div>
+            </section>
+
+            <section id="paneLocais" class="view-pane">
+                <div style="display:flex; justify-content:space-between; margin-bottom:20px; align-items:center;">
+                    <h2 style="font-size:20px; font-weight:bold;">Gestão de Caixas e Prateleiras</h2>
+                    <button class="btn btn-primario" onclick="abrirModalLocal()">➕ Novo Local</button>
                 </div>
-            </div>
+                <div id="renderLocaisGrid" class="dashboard-grid"></div>
+            </section>
 
-            <div class="filtros-wrapper" id="filtrosContainer"></div>
-            <div class="produtos-lista" id="renderEstoqueRow"></div>
-        </section>
+            <section id="paneHistorico" class="view-pane">
+                <div style="display:flex; justify-content:flex-end; margin-bottom:20px;">
+                    <button class="btn btn-primario" onclick="abrirModalLancamento()">📝 Registrar Compra</button>
+                </div>
+                <div class="config-box" style="width:100%; overflow-x: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Data Entrada</th>
+                                <th>Ativo Comercializado</th>
+                                <th>Quantidade</th>
+                                <th>Custo Total</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="renderHistoricoRows"></tbody>
+                    </table>
+                </div>
+            </section>
 
-        <section id="paneHistorico" class="view-pane">
-            <div style="display:flex; justify-content:flex-end; margin-bottom:20px;">
-                <button class="btn btn-primario" onclick="abrirModalLancamento()">📝 Registrar Compra</button>
-            </div>
-            <div class="config-box" style="width:100%; overflow-x: auto;">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Data Entrada</th>
-                            <th>Ativo Comercializado</th>
-                            <th>Quantidade</th>
-                            <th>Custo Total</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="renderHistoricoRows"></tbody>
-                </table>
-            </div>
-        </section>
+            <section id="paneConfig" class="view-pane">
+                <div class="config-section">
+                    <div class="config-box" style="grid-column: span 2; margin-bottom: 10px;">
+                        <h4>👥 Configuração Avançada de Perfis e Privilégios</h4>
+                        <input type="hidden" id="formPerfilIndex" value="">
+                        <div class="form-grid" style="margin-bottom: 14px;">
+                            <div class="form-group">
+                                <label>Nome / Departamento</label>
+                                <input type="text" id="addPerfilNome" placeholder="Ex: Engenharia">
+                            </div>
+                            <div class="form-group">
+                                <label>PIN de Acesso</label>
+                                <input type="text" id="addPerfilPin" placeholder="Ex: 2222" maxlength="8">
+                            </div>
+                            <div class="form-group form-group-full">
+                                <label class="print-selector-item" style="font-weight: bold;">
+                                    <input type="checkbox" id="addPerfilMasterToggle" onchange="alternarEstadoPerfilMaster(this)">
+                                    <span>👑 Definir como Administrador Mestre (Acesso total irrestrito)</span>
+                                </label>
+                            </div>
+                            
+                            <div class="form-group form-group-full" id="groupPerfilCategoriasWrapper">
+                                <label>Diretórios Autorizados:</label>
+                                <div class="print-selector-container" id="configPerfilCategoriasChecklist"></div>
+                            </div>
 
-        <section id="paneConfig" class="view-pane">
-            <div class="config-section">
-                <div class="config-box" style="grid-column: span 2; margin-bottom: 10px;">
-                    <h4>👥 Configuração Avançada de Perfis e Privilégios</h4>
-                    <input type="hidden" id="formPerfilIndex" value="">
-                    <div class="form-grid" style="margin-bottom: 14px;">
-                        <div class="form-group">
-                            <label>Nome / Departamento</label>
-                            <input type="text" id="addPerfilNome" placeholder="Ex: Engenharia ou Gabriel">
-                        </div>
-                        <div class="form-group">
-                            <label>PIN de Acesso</label>
-                            <input type="text" id="addPerfilPin" placeholder="Ex: 2222" maxlength="8">
-                        </div>
-                        <div class="form-group form-group-full">
-                            <label class="print-selector-item" style="font-weight: bold;">
-                                <input type="checkbox" id="addPerfilMasterToggle" onchange="alternarEstadoPerfilMaster(this)">
-                                <span>👑 Definir como Administrador Mestre (Acesso total irrestrito)</span>
-                            </label>
-                        </div>
-                        
-                        <div class="form-group form-group-full" id="groupPerfilCategoriasWrapper">
-                            <label>Diretórios Autorizados:</label>
-                            <div class="print-selector-container" id="configPerfilCategoriasChecklist"></div>
-                        </div>
-
-                        <div class="form-group form-group-full" id="groupPerfilPermissoesWrapper">
-                            <label>Ações Autorizadas para este Perfil:</label>
-                            <div class="matrix-permissions-grid">
-                                <label class="print-selector-item"><input type="checkbox" id="permCriar" checked> ➕ Criar Novos Ativos</label>
-                                <label class="print-selector-item"><input type="checkbox" id="permEditar" checked> ✏️ Editar Dados</label>
-                                <label class="print-selector-item"><input type="checkbox" id="permDeletar" checked> 🗑️ Excluir Registros</label>
+                            <div class="form-group form-group-full" id="groupPerfilPermissoesWrapper">
+                                <label>Ações Autorizadas para este Perfil:</label>
+                                <div class="matrix-permissions-grid">
+                                    <label class="print-selector-item"><input type="checkbox" id="permCriar" checked> ➕ Criar Novos Ativos</label>
+                                    <label class="print-selector-item"><input type="checkbox" id="permEditar" checked> ✏️ Editar Dados</label>
+                                    <label class="print-selector-item"><input type="checkbox" id="permDeletar" checked> 🗑️ Excluir Registros</label>
+                                </div>
                             </div>
                         </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-secundario" id="btnCancelarEdicaoPerfil" style="display: none;" onclick="cancelarEdicaoPerfil()">Cancelar Edição</button>
+                            <button class="btn btn-primario" id="btnGravarPerfilSubmit" style="flex: 1;" onclick="adicionarPerfilAcessoCorporativo()">Gravar e Publicar Perfil</button>
+                        </div>
+                        <div class="tag-list" id="listConfigPerfisAcesso" style="margin-top:20px;"></div>
                     </div>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="btn btn-secundario" id="btnCancelarEdicaoPerfil" style="display: none;" onclick="cancelarEdicaoPerfil()">Cancelar Edição</button>
-                        <button class="btn btn-primario" id="btnGravarPerfilSubmit" style="flex: 1;" onclick="adicionarPerfilAcessoCorporativo()">Gravar e Publicar Perfil</button>
-                    </div>
-                    <div class="tag-list" id="listConfigPerfisAcesso" style="margin-top:20px;"></div>
-                </div>
 
-                <div class="config-box" style="grid-column: span 2; margin-bottom: 10px;">
-                    <h4>⚙️ Diretórios / Categorias</h4>
-                    <div class="config-input-group">
-                        <input type="text" id="addCategoriaInput" placeholder="Ex: Elétrico">
-                        <button class="btn btn-primario" onclick="adicionarCategoriaDinamica()">Adicionar Diretório</button>
+                    <div class="config-box" style="grid-column: span 2; margin-bottom: 10px;">
+                        <h4>⚙️ Diretórios / Categorias</h4>
+                        <div class="config-input-group">
+                            <input type="text" id="addCategoriaInput" placeholder="Ex: Elétrico">
+                            <button class="btn btn-primario" onclick="adicionarCategoriaDinamica()">Adicionar Diretório</button>
+                        </div>
+                        <div class="tag-list" id="listConfigCategorias"></div>
                     </div>
-                    <div class="tag-list" id="listConfigCategorias"></div>
-                </div>
 
-                <div class="config-box" style="grid-column: span 2; margin-bottom: 10px;">
-                    <h4>📏 Unidades de Medida</h4>
-                    <div class="config-input-group">
-                        <input type="text" id="addUnidadeInput" placeholder="Ex: fardo">
-                        <button class="btn btn-primario" onclick="adicionarUnidadeDinamicaManual()">Adicionar Unidade</button>
+                    <div class="config-box" style="grid-column: span 2; margin-bottom: 10px;">
+                        <h4>📏 Unidades de Medida</h4>
+                        <div class="config-input-group">
+                            <input type="text" id="addUnidadeInput" placeholder="Ex: fardo">
+                            <button class="btn btn-primario" onclick="adicionarUnidadeDinamicaManual()">Adicionar Unidade</button>
+                        </div>
+                        <div class="tag-list" id="listConfigUnidades"></div>
                     </div>
-                    <div class="tag-list" id="listConfigUnidades"></div>
-                </div>
 
-                <div class="config-box" style="grid-column: span 2;">
-                    <h4>🏢 Fornecedores Homologados</h4>
-                    <div class="config-input-group">
-                        <input type="text" id="addFornNome" placeholder="Razão Social">
-                        <button class="btn btn-primario" onclick="adicionarFornecedorCorporativo()">Cadastrar</button>
+                    <div class="config-box" style="grid-column: span 2;">
+                        <h4>🏢 Fornecedores Homologados</h4>
+                        <div class="config-input-group">
+                            <input type="text" id="addFornNome" placeholder="Razão Social">
+                            <button class="btn btn-primario" onclick="adicionarFornecedorCorporativo()">Cadastrar</button>
+                        </div>
+                        <div class="tag-list" id="listConfigFornecedores"></div>
                     </div>
-                    <div class="tag-list" id="listConfigFornecedores"></div>
                 </div>
-            </div>
-        </section>
-    </main>
+            </section>
+        </main>
+    </div>
 
     <div class="floating-scan-btn area-normal-sistema" onclick="abrirScanner()">📷</div>
 
@@ -454,14 +475,13 @@
             </div>
 
             <div id="etiquetaPrintArea" class="etiqueta-box medio">
-                <div class="etiq-header">TECSERVICE</div>
+                <div class="etiq-header">TECSERVICE LOG</div>
                 <div class="etiq-body">
                     <div id="qrCodeImageWrapper"></div>
                     <div class="etiq-dados">
                         <h4 id="lblQrNome">Nome do Produto</h4>
-                        <p>Cód: <b id="lblQrCod">XXX</b></p>
-                        <p>Marca: <b id="lblQrMarca">YYY</b></p>
-                        <p>Local: <b id="lblQrLocal">ZZZ</b></p>
+                        <p id="lblQrCod">Cód: XXX</p>
+                        <p id="lblQrLocal">Local: ZZZ</p>
                     </div>
                 </div>
             </div>
@@ -482,8 +502,27 @@
             <p id="auditoriaSubtitulo" style="font-size:12px; color:var(--ink-muted); margin-bottom:15px;"></p>
             
             <div id="auditoriaListaItens" style="max-height: 400px; overflow-y: auto;"></div>
-
             <button class="btn btn-primario" style="width:100%; margin-top:20px;" onclick="salvarAuditoria()">Salvar Contagem</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalLocalOverlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Novo Local / Caixa</h3>
+                <button class="btn-icon" onclick="fecharModal('modalLocalOverlay')">✕</button>
+            </div>
+            <div class="form-grid">
+                <div class="form-group form-group-full"><label>Nome do Local (Ex: Caixa 01, Estante B)</label><input type="text" id="locNome"></div>
+                <div class="form-group form-group-full">
+                    <label>Tipo de Armazenamento</label>
+                    <select id="locTipo">
+                        <option value="Caixa">Caixa / Container</option>
+                        <option value="Prateleira">Prateleira / Estante</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn btn-primario" style="width:100%; margin-top:20px;" onclick="salvarLocal()">Criar Local</button>
         </div>
     </div>
 
@@ -495,22 +534,24 @@
             </div>
             <input type="hidden" id="formId">
             <div class="form-grid">
-                <div class="form-group">
-                    <label>Código Interno</label>
-                    <input type="text" id="formCodigo" placeholder="Ex: MAT-0482">
-                </div>
-                <div class="form-group">
-                    <label>Marca do Material</label>
-                    <input type="text" id="formMarca" placeholder="Ex: Chamex">
-                </div>
-                <div class="form-group form-group-full">
-                    <label>Descrição / Especificação Completa</label>
-                    <input type="text" id="formNome" placeholder="Ex: Papel A4">
-                </div>
+                <div class="form-group"><label>Código Interno</label><input type="text" id="formCodigo" placeholder="Ex: MAT-0482"></div>
+                <div class="form-group"><label>Marca do Material</label><input type="text" id="formMarca" placeholder="Ex: Chamex"></div>
+                <div class="form-group form-group-full"><label>Descrição / Especificação Completa</label><input type="text" id="formNome" placeholder="Ex: Papel A4"></div>
                 
                 <div class="form-group form-group-full">
-                    <label>Localização Física (Ex: Caixa 01, Prateleira A)</label>
-                    <input type="text" id="formLocalizacao" placeholder="Ex: Caixa 01">
+                    <label>Localização (Caixa / Prateleira)</label>
+                    <div style="display:flex; gap:8px;">
+                        <select id="formLocalizacao" style="flex:1;"></select>
+                        <button type="button" class="btn btn-primario" style="border-radius:8px;" onclick="toggleSubForm('inlineLocal')">+</button>
+                    </div>
+                </div>
+
+                <div id="inlineLocal" style="display:none; grid-column: span 2; background:#f0f4f8; padding:15px; border-radius:10px; margin-bottom:10px;">
+                    <p style="font-size:11px; font-weight:bold; margin-bottom:8px; color:var(--accent);">CRIAR NOVO LOCAL RÁPIDO</p>
+                    <div style="display:flex; gap:8px;">
+                        <input type="text" id="newLocalNome" placeholder="Nome (Ex: Caixa 50)" style="flex:1;">
+                        <button type="button" class="btn btn-sucesso" onclick="salvarLocalInline()">SALVAR</button>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -561,19 +602,10 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label>Preço Unitário (R$)</label>
-                    <input type="number" id="formPreco" step="0.01" placeholder="0.00">
-                </div>
-                <div class="form-group">
-                    <label>Estoque Físico Atual</label>
-                    <input type="number" id="formAtual" placeholder="0" min="0">
-                </div>
-                <div class="form-group form-group-full">
-                    <label>Estoque Mínimo de Alerta</label>
-                    <input type="number" id="formMinimo" placeholder="0" min="0">
-                </div>
-
+                <div class="form-group"><label>Preço Unitário (R$)</label><input type="number" id="formPreco" step="0.01" placeholder="0.00"></div>
+                <div class="form-group"><label>Estoque Físico Atual</label><input type="number" id="formAtual" placeholder="0" min="0"></div>
+                <div class="form-group form-group-full"><label>Estoque Mínimo de Alerta</label><input type="number" id="formMinimo" placeholder="0" min="0"></div>
+                
                 <div class="form-group form-group-full">
                     <label>Imagem Fotográfica do Produto</label>
                     <label class="custom-file-upload">
@@ -601,18 +633,9 @@
                     <label>Ativo Comprado</label>
                     <select id="lancamentoSelectMaterial"></select>
                 </div>
-                <div class="form-group">
-                    <label>Quantidade Adquirida</label>
-                    <input type="number" id="lancamentoQtd" placeholder="0">
-                </div>
-                <div class="form-group">
-                    <label>Custo Total Pago (R$)</label>
-                    <input type="number" id="lancamentoValor" step="0.01" placeholder="0.00">
-                </div>
-                <div class="form-group">
-                    <label>Data da Nota / Operação</label>
-                    <input type="date" id="lancamentoData">
-                </div>
+                <div class="form-group"><label>Quantidade Adquirida</label><input type="number" id="lancamentoQtd" placeholder="0"></div>
+                <div class="form-group"><label>Custo Total Pago (R$)</label><input type="number" id="lancamentoValor" step="0.01" placeholder="0.00"></div>
+                <div class="form-group"><label>Data da Nota / Operação</label><input type="date" id="lancamentoData"></div>
             </div>
             <div style="display:flex; gap:12px; margin-top:24px; justify-content: flex-end;">
                 <button class="btn btn-secundario" onclick="fecharModal('modalLancamentoOverlay')">Cancelar</button>
@@ -675,33 +698,39 @@
 
     <script>
         // 🚨 CONFIGURAÇÃO DE NUVEM 🚨
-        const GOOGLE_SCRIPT_URL = "SUA_URL_DO_GOOGLE_SCRIPT_AQUI";
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyuFfLF2B8BiT6m7jKDBce2WQZbW4L6mylwTdvNv5gxv-4qKRfnvPG-l-Fv0sKqULAW/exec";
 
         const perfisPadrao = [
             { nome: "Administrativo", pin: "1111", master: true, categorias: [], permissoes: { criar: true, editar: true, deletar: true } },
             { nome: "Engenharia", pin: "2222", master: false, categorias: ["Elétrico"], permissoes: { criar: false, editar: true, deletar: false } }
         ];
         
-        // Dados Mockados para Exemplo (O ID é o que vira QR Code)
         const itensPadrao = [
-            { id: "1001", codigo: "CX-01", marca: "N/A", nome: "Caixa 01 (Virtual)", categoria: "Administrativo", unidade: "unidades", fornecedor: "N/A", preco: 0, atual: 1, minimo: 0, checked: false, foto: "", localizacao: "Estante Principal" },
-            { id: "1002", codigo: "ELT-042", marca: "Taschibra", nome: "Lâmpada LED Tubular 18W", categoria: "Elétrico", unidade: "unidades", fornecedor: "Eletro Comercial", preco: 18.90, atual: 12, minimo: 10, checked: false, foto: "", localizacao: "Caixa 01 (Virtual)" },
+            { id: "1002", codigo: "ELT-042", marca: "Taschibra", nome: "Lâmpada LED Tubular 18W", categoria: "Elétrico", unidade: "unidades", fornecedor: "Eletro Comercial", preco: 18.90, atual: 12, minimo: 10, checked: false, foto: "", localizacao: "Caixa 01" },
             { id: "1003", codigo: "LMP-089", marca: "Ypê", nome: "Detergente Neutro 5L", categoria: "Limpeza", unidade: "galão", fornecedor: "Vale Limpeza", preco: 22.00, atual: 1, minimo: 3, checked: false, foto: "", localizacao: "Prateleira B" }
         ];
+
+        const locaisPadrao = [
+            { id: "L01", nome: "Caixa 01", tipo: "Caixa" },
+            { id: "L02", nome: "Prateleira B", tipo: "Prateleira" }
+        ];
+
         const catPadrao = [{ nome: "Administrativo", cor: "#00439c" }, { nome: "Limpeza", cor: "#00b2a9" }, { nome: "Elétrico", cor: "#f59e0b" }];
         const unPadrao = ["unidades", "pacotes", "fardos", "caixas", "resmas", "galão"];
         const fornPadrao = [{ nome: "Distribuidora Vale", tel: "N/I", email: "N/I" }];
 
-        let dbItems = []; let dbCategoriasComplexas = []; let dbUnidades = []; let dbFornecedores = []; let dbHistorico = []; let dbPerfisAcesso = [];
+        let dbItems = []; let dbLocais = []; let dbCategoriasComplexas = []; let dbUnidades = []; let dbFornecedores = []; let dbHistorico = []; let dbPerfisAcesso = [];
         let perfilAutenticadoGlobal = null; let filtroFiltroEstoque = 'todos';
         
         let html5QrcodeScanner = null;
         let objQrCode = null;
+        let emAuditoria = false;
 
         // --- GOOGLE ENGINE SYNC ---
         async function carregarDadosDaNuvem() {
             if (GOOGLE_SCRIPT_URL === "SUA_URL_DO_GOOGLE_SCRIPT_AQUI") {
                 dbItems = JSON.parse(localStorage.getItem('tec_items')) || itensPadrao;
+                dbLocais = JSON.parse(localStorage.getItem('tec_locais')) || locaisPadrao;
                 dbCategoriasComplexas = JSON.parse(localStorage.getItem('tec_cat_complexas')) || catPadrao;
                 dbUnidades = JSON.parse(localStorage.getItem('tec_unidades')) || unPadrao;
                 dbFornecedores = JSON.parse(localStorage.getItem('tec_fornecedores')) || fornPadrao;
@@ -716,22 +745,24 @@
                 const cloudData = await response.json();
                 if (cloudData && cloudData.items) {
                     dbItems = cloudData.items || [];
+                    dbLocais = cloudData.locais || locaisPadrao;
                     dbCategoriasComplexas = cloudData.categories || catPadrao;
                     dbUnidades = cloudData.units || unPadrao;
                     dbFornecedores = cloudData.suppliers || fornPadrao;
                     dbHistorico = cloudData.history || [];
                     dbPerfisAcesso = cloudData.profiles || perfisPadrao;
                 } else {
-                    dbItems = itensPadrao; dbCategoriasComplexas = catPadrao; dbUnidades = unPadrao; dbFornecedores = fornPadrao; dbPerfisAcesso = perfisPadrao;
+                    dbItems = itensPadrao; dbLocais = locaisPadrao; dbCategoriasComplexas = catPadrao; dbUnidades = unPadrao; dbFornecedores = fornPadrao; dbPerfisAcesso = perfisPadrao;
                 }
             } catch (error) {
-                dbItems = itensPadrao; dbCategoriasComplexas = catPadrao; dbUnidades = unPadrao; dbFornecedores = fornPadrao; dbPerfisAcesso = perfisPadrao;
+                dbItems = itensPadrao; dbLocais = locaisPadrao; dbCategoriasComplexas = catPadrao; dbUnidades = unPadrao; dbFornecedores = fornPadrao; dbPerfisAcesso = perfisPadrao;
             }
             renderEstoque(); popularCombosFormularios(); renderConfiguracoes();
         }
 
         async function salvarDadosNaNuvem() {
             localStorage.setItem('tec_items', JSON.stringify(dbItems));
+            localStorage.setItem('tec_locais', JSON.stringify(dbLocais));
             localStorage.setItem('tec_cat_complexas', JSON.stringify(dbCategoriasComplexas));
             localStorage.setItem('tec_unidades', JSON.stringify(dbUnidades));
             localStorage.setItem('tec_fornecedores', JSON.stringify(dbFornecedores));
@@ -739,7 +770,7 @@
             localStorage.setItem('tec_perfis', JSON.stringify(dbPerfisAcesso));
 
             if (GOOGLE_SCRIPT_URL === "SUA_URL_DO_GOOGLE_SCRIPT_AQUI") return;
-            const packagePayload = { items: dbItems, categories: dbCategoriasComplexas, units: dbUnidades, suppliers: dbFornecedores, history: dbHistorico, profiles: dbPerfisAcesso };
+            const packagePayload = { items: dbItems, locais: dbLocais, categories: dbCategoriasComplexas, units: dbUnidades, suppliers: dbFornecedores, history: dbHistorico, profiles: dbPerfisAcesso };
             try { await fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" }, body: JSON.stringify(packagePayload) }); } catch (error) { console.error(error); }
         }
 
@@ -752,24 +783,76 @@
             return '📦';
         }
 
+        // 🟢 ══════════ GESTÃO DE LOCAIS / CAIXAS ══════════
+        function renderLocais() {
+            const container = document.getElementById('renderLocaisGrid');
+            container.innerHTML = '';
+            dbLocais.forEach(loc => {
+                const qtdItens = dbItems.filter(i => i.localizacao === loc.nome).length;
+                container.innerHTML += `
+                    <div class="metric-card" style="position:relative;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <h3 style="font-size:16px; color:var(--ink);">${loc.nome}</h3>
+                            <span style="font-size:24px;">${loc.tipo === 'Caixa' ? '📦' : '📏'}</span>
+                        </div>
+                        <p style="font-size:12px; font-weight:normal; color:var(--ink-muted); margin-top:5px; font-family:'DM Sans', sans-serif;">${qtdItens} itens vinculados</p>
+                        <button class="btn btn-secundario" style="width:100%; margin-top:15px;" onclick="abrirGeradorQRLocais('${loc.id}')">🔲 Gerar Etiqueta Local</button>
+                    </div>`;
+            });
+        }
+
+        function abrirModalLocal() { document.getElementById('modalLocalOverlay').classList.add('active'); document.getElementById('locNome').value = ''; }
+        
+        function salvarLocal() {
+            const nome = document.getElementById('locNome').value.trim();
+            if(!nome) return alert("Digite um nome para o local.");
+            if(dbLocais.find(l => l.nome.toLowerCase() === nome.toLowerCase())) return alert("Este local já existe.");
+            
+            dbLocais.push({ id: "LOC-" + Date.now().toString(), nome: nome, tipo: document.getElementById('locTipo').value });
+            fecharModal('modalLocalOverlay');
+            renderLocais();
+            popularCombosFormularios();
+            salvarDadosNaNuvem();
+        }
+
+        function salvarLocalInline() {
+            const nome = document.getElementById('newLocalNome').value.trim();
+            if(!nome) return;
+            if(!dbLocais.find(l => l.nome.toLowerCase() === nome.toLowerCase())) {
+                dbLocais.push({ id: "LOC-" + Date.now().toString(), nome: nome, tipo: "Caixa" });
+            }
+            popularCombosFormularios();
+            document.getElementById('formLocalizacao').value = nome;
+            toggleSubForm('inlineLocal');
+            salvarDadosNaNuvem();
+        }
+
         // 🟢 ══════════ ENGINE DE GERAÇÃO E IMPRESSÃO DE QR CODE ══════════
         function abrirGeradorQR(idItem) {
             const item = dbItems.find(i => i.id == idItem);
             if(!item) return;
-
             document.getElementById('modalGeradorQR').classList.add('active');
-            
             document.getElementById('lblQrNome').textContent = item.nome;
-            document.getElementById('lblQrCod').textContent = item.codigo || 'S/C';
-            document.getElementById('lblQrMarca').textContent = item.marca || 'Genérico';
-            document.getElementById('lblQrLocal').textContent = item.localizacao || 'Geral';
+            document.getElementById('lblQrCod').textContent = "Cód: " + (item.codigo || 'S/C');
+            document.getElementById('lblQrLocal').textContent = "Local: " + (item.localizacao || 'Geral');
+            gerarCodigoBase(item.id.toString());
+        }
 
+        function abrirGeradorQRLocais(idLocal) {
+            const loc = dbLocais.find(l => l.id == idLocal);
+            if(!loc) return;
+            document.getElementById('modalGeradorQR').classList.add('active');
+            document.getElementById('lblQrNome').textContent = loc.nome;
+            document.getElementById('lblQrCod').textContent = "TIPO: " + loc.tipo;
+            document.getElementById('lblQrLocal').textContent = "ID LOCAL";
+            gerarCodigoBase(loc.id.toString());
+        }
+
+        function gerarCodigoBase(texto) {
             const qrContainer = document.getElementById('qrCodeImageWrapper');
             qrContainer.innerHTML = ''; 
-            
-            // O texto do QR é apenas o ID string limpo
             objQrCode = new QRCode(qrContainer, {
-                text: String(item.id).trim(),
+                text: texto.trim(),
                 width: 100, height: 100,
                 colorDark : "#000000", colorLight : "#ffffff",
                 correctLevel : QRCode.CorrectLevel.H
@@ -800,7 +883,20 @@
             setTimeout(() => { document.body.classList.remove('printing-qr'); areaPrintTarget.innerHTML = ''; }, 500);
         }
 
-        // 🟢 ══════════ ENGINE DE SCANNER E AUDITORIA "PAI/FILHO" ══════════
+        // 🟢 ══════════ ENGINE DE SCANNER E AUDITORIA ══════════
+        function iniciarRelatorioAuditoria() {
+            if(!confirm("Deseja iniciar uma sessão de auditoria e travar o estoque para contagem?")) return;
+            emAuditoria = true;
+            document.body.classList.add('in-audit');
+        }
+
+        function finalizarRelatorioAuditoria() {
+            emAuditoria = false;
+            document.body.classList.remove('in-audit');
+            salvarDadosNaNuvem();
+            alert("Auditoria Finalizada com sucesso! Todos os dados foram gravados na base.");
+        }
+
         function abrirScanner() {
             if(document.getElementById('modalScanner').classList.contains('active')) return;
             document.getElementById('modalScanner').classList.add('active');
@@ -813,11 +909,11 @@
                     { facingMode: "environment" }, 
                     { fps: 10, qrbox: 250 },
                     (decodedText) => {
-                        pararScanner(); // Fecha a câmera ao ler
+                        pararScanner(); // Fecha a câmera
                         processarLeituraQR(decodedText); 
                     }
                 ).catch(err => { 
-                    console.log("Câmera indisponível no PC ou Sem permissão", err); 
+                    console.log("Câmera ignorada no ambiente", err); 
                 });
             } catch (error) { console.error("Erro na câmera", error); }
         }
@@ -828,40 +924,35 @@
                 try { 
                     html5QrcodeScanner.stop().then(() => { 
                         html5QrcodeScanner.clear(); 
-                    }).catch(e => { console.log("Scanner stop ignorado", e); }); 
+                    }).catch(e => { console.log("Scanner stop bypass", e); }); 
                 } catch(e) { console.log("Catch interno stop", e); }
             }
         }
 
         function processarLeituraQR(codigoLido) {
             if(!codigoLido) return;
-            // 🟢 BLINDAGEM: Limpa espaços em branco ou lixo da leitura
             const codigoLimpo = String(codigoLido).trim().toLowerCase();
             
-            // Busca o item lido comparando o código de barras ou o ID interno do sistema
-            const itemLido = dbItems.find(i => 
-                (i.id && String(i.id).trim().toLowerCase() === codigoLimpo) || 
-                (i.codigo && String(i.codigo).trim().toLowerCase() === codigoLimpo)
-            );
-
-            if (!itemLido) { 
-                alert(`❌ Nenhum produto encontrado com o código: [ ${codigoLido} ]\n\nSe este for um código de barras real, digite esse número no campo "Código Interno" ao cadastrar o produto.`); 
-                return; 
+            // 1. O código lido é de um Local/Caixa?
+            const local = dbLocais.find(l => String(l.id).trim().toLowerCase() === codigoLimpo || String(l.nome).trim().toLowerCase() === codigoLimpo);
+            if (local) {
+                const itensDoLocal = dbItems.filter(i => i.localizacao && i.localizacao.toLowerCase() === local.nome.toLowerCase());
+                if(itensDoLocal.length === 0) return alert(`📦 A ${local.nome} está vazia no sistema.`);
+                abrirModalAuditoria(itensDoLocal, `📦 Conferindo Local: ${local.nome}`);
+                return;
             }
 
-            // Lógica PAI E FILHO (WMS): Verifica se existem itens onde a Localização é igual ao Nome do item lido
-            const filhos = dbItems.filter(i => i.localizacao && i.localizacao.trim().toLowerCase() === itemLido.nome.trim().toLowerCase());
-
-            if (filhos.length > 0) {
-                // É UMA CAIXA PAI! Lista todos da caixa.
-                abrirModalAuditoria(itemLido.id, filhos, `📦 Conteúdo da: ${itemLido.nome}`);
+            // 2. O código lido é de um Produto?
+            const itemLido = dbItems.find(i => (i.id && String(i.id).trim().toLowerCase() === codigoLimpo) || (i.codigo && String(i.codigo).trim().toLowerCase() === codigoLimpo));
+            
+            if (itemLido) {
+                abrirModalAuditoria([itemLido], `🔍 Conferindo Produto: ${itemLido.nome}`);
             } else {
-                // É UM PRODUTO FILHO (Individual)
-                abrirModalAuditoria(itemLido.id, [itemLido], `🔍 Produto: ${itemLido.nome}`);
+                alert(`❌ Código [ ${codigoLido} ] não reconhecido nem como Produto nem como Local.`);
             }
         }
 
-        function abrirModalAuditoria(codigoReferencia, listaItens, titulo) {
+        function abrirModalAuditoria(listaItens, titulo) {
             document.getElementById('modalAuditoriaRapida').classList.add('active');
             document.getElementById('auditoriaSubtitulo').textContent = titulo;
             
@@ -873,7 +964,7 @@
                     <div class="auditoria-card">
                         <div style="flex:1;">
                             <h4 style="font-size:14px; margin-bottom:4px;">${item.nome}</h4>
-                            <span style="font-size:11px; color:var(--ink-muted);">Sistema: ${item.atual} ${item.unidade || ''}</span>
+                            <span style="font-size:11px; color:var(--ink-muted);">Sistema diz que tem: ${item.atual} ${item.unidade || ''}</span>
                         </div>
                         <div>
                             <input type="number" class="auditoria-input" data-id="${item.id}" value="${item.atual}" min="0">
@@ -893,16 +984,20 @@
                 const itemRef = dbItems.find(i => i.id == idItem);
                 
                 if (itemRef && itemRef.atual !== novaQtd) {
-                    itemRef.atual = novaQtd; // Atualiza direto
+                    itemRef.atual = novaQtd; 
                     alterados++;
                 }
             });
 
             fecharModal('modalAuditoriaRapida');
-            renderEstoque(); // Re-desenha a tela
-            salvarDadosNaNuvem(); // AUTO-SAVE para o Google Docs
+            renderEstoque();
             
-            if(alterados > 0) alert(`✅ Estoque atualizado! (${alterados} itens alterados)`);
+            if(!emAuditoria) {
+                salvarDadosNaNuvem(); 
+                if(alterados > 0) alert(`✅ Estoque atualizado! (${alterados} itens alterados)`);
+            } else {
+                if(alterados > 0) alert(`Sessão registrou a contagem de ${alterados} itens.`);
+            }
         }
 
         // --- CONTROLE DE ACESSO AVANÇADO (RBAC) ---
@@ -951,6 +1046,7 @@
             document.getElementById('topbarActionsArea').style.display = alvo === 'estoque' ? 'flex' : 'none';
 
             if(alvo === 'estoque') { document.getElementById('paneEstoque').classList.add('active'); document.getElementById('menuEstoque').classList.add('active'); renderEstoque(); }
+            else if (alvo === 'locais') { document.getElementById('paneLocais').classList.add('active'); document.getElementById('menuLocais').classList.add('active'); renderLocais(); }
             else if (alvo === 'historico') { document.getElementById('paneHistorico').classList.add('active'); document.getElementById('menuHistorico').classList.add('active'); renderHistorico(); }
             else if (alvo === 'config') { document.getElementById('paneConfig').classList.add('active'); document.getElementById('menuConfig').classList.add('active'); renderConfiguracoes(); }
         }
@@ -1068,8 +1164,8 @@
                 const item = dbItems.find(m => m.id == id);
                 if(item) { Object.assign(item, { codigo, marca: colMarca, nome, localizacao, categoria, unidade, fornecedor: forn, preco, atual, minimo }); if(foto) item.foto = foto; }
             } else {
-                // Criação do ID único que será lido pelo QR
-                dbItems.push({ id: Date.now().toString(), codigo, marca: colMarca, nome, localizacao, categoria, unidade, fornecedor: forn, preco, atual, minimo, checked: false, foto });
+                // Criação do ID único
+                dbItems.push({ id: "ATV-" + Date.now().toString(), codigo, marca: colMarca, nome, localizacao, categoria, unidade, fornecedor: forn, preco, atual, minimo, checked: false, foto });
             }
             fecharModal('modalItemOverlay'); renderEstoque(); salvarDadosNaNuvem();
         }
@@ -1078,16 +1174,20 @@
         function processarImagemLocal(input) { const arquivo = input.files[0]; if (arquivo) { const leitor = new FileReader(); leitor.onload = function(e) { document.getElementById('formFotoBase64').value = e.target.result; }; leitor.readAsDataURL(arquivo); } }
 
         function toggleSubForm(id) { const f = document.getElementById(id); f.style.display = f.style.display === 'flex' ? 'none' : 'flex'; }
+        
         function salvarCategoriaInline() { const nome = document.getElementById('inlineCatNome').value.trim(); const colCor = document.getElementById('inlineCatCor').value; if(!nome) return; if(!dbCategoriasComplexas.some(c => c.nome.toLowerCase() === nome.toLowerCase())) { dbCategoriasComplexas.push({ nome, cor: colCor }); document.getElementById('inlineCatNome').value = ''; document.getElementById('inlineFormCategoria').style.display = 'none'; popularCombosFormularios(); renderConfiguracoes(); renderEstoque(); salvarDadosNaNuvem(); } }
         function salvarUnidadeInline() { const nome = document.getElementById('inlineUnidadeNome').value.trim(); if(!nome) return; if(!dbUnidades.includes(nome)) { dbUnidades.push(nome); document.getElementById('inlineUnidadeNome').value = ''; document.getElementById('inlineFormUnidade').style.display = 'none'; popularCombosFormularios(); renderConfiguracoes(); renderEstoque(); salvarDadosNaNuvem(); } }
         function salvarFornecedorInline() { const nome = document.getElementById('inlineFornNome').value.trim(); if(!nome) return; if(!dbFornecedores.some(f => f.nome.toLowerCase() === nome.toLowerCase())) { dbFornecedores.push({ nome, tel: 'N/I', email: 'N/I' }); document.getElementById('inlineFornNome').value = ''; document.getElementById('inlineFormFornecedor').style.display = 'none'; popularCombosFormularios(); renderConfiguracoes(); renderEstoque(); salvarDadosNaNuvem(); } }
 
         function popularCombosFormularios() {
-            const selCat = document.getElementById('formCategoria'); const selUn = document.getElementById('formUnidade'); const selForn = document.getElementById('formFornecedor');
+            const selCat = document.getElementById('formCategoria'); const selUn = document.getElementById('formUnidade'); const selForn = document.getElementById('formFornecedor'); const selLoc = document.getElementById('formLocalizacao');
             selCat.innerHTML = ''; dbCategoriasComplexas.forEach(c => selCat.innerHTML += `<option value="${c.nome}">${c.nome}</option>`);
             selUn.innerHTML = ''; dbUnidades.forEach(u => selUn.innerHTML += `<option value="${u}">${u}</option>`);
-            selForn.innerHTML = '<option value="Nenhum">Nenhum Fornecedor Vinculado</option>'; dbFornecedores.forEach(f => selForn.innerHTML += `<option value="${f.nome}">${f.nome}</option>`);
+            selForn.innerHTML = '<option value="Nenhum">Nenhum Fornecedor</option>'; dbFornecedores.forEach(f => selForn.innerHTML += `<option value="${f.nome}">${f.nome}</option>`);
             
+            selLoc.innerHTML = '<option value="">(Localização Geral)</option>';
+            dbLocais.forEach(l => selLoc.innerHTML += `<option value="${l.nome}">${l.nome}</option>`);
+
             const containerCheckboxesConfig = document.getElementById('configPerfilCategoriasChecklist'); containerCheckboxesConfig.innerHTML = '';
             containerCheckboxesConfig.innerHTML += `<label class="print-selector-item" style="font-weight: 700;"><input type="checkbox" id="configPerfilSelectAllCatsTrigger" onchange="alternarTodasCategoriasFormPerfil(this)"><span>🌐 [Selecionar Todas as Categorias]</span></label><div class="print-selector-divider"></div>`;
             dbCategoriasComplexas.forEach(c => { containerCheckboxesConfig.innerHTML += `<label class="print-selector-item"><input type="checkbox" value="${c.nome}" class="config-perfil-cat-checkbox-item" onchange="verificarStatusSelecaoMasterPerfil()"><span>${c.nome}</span></label>`; });
