@@ -8,7 +8,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- 🟢 BIBLIOTECAS EXTERNAS (Scanner da Câmera, Gerador de QR e Download de Imagem) -->
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -146,7 +145,7 @@
         .badge-ok { background: var(--green-bg); color: var(--green); }
         .badge-comprar { background: var(--red-bg); color: var(--red); }
 
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(7, 10, 18, 0.6); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 5000; opacity: 1; transition: opacity 0.2s ease; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(7, 10, 18, 0.8); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 5000; opacity: 1; transition: opacity 0.2s ease; }
         .modal-overlay.active { display: flex; }
         .modal-content { background: var(--card); border: 1px solid var(--border); border-radius: 20px; width: 100%; max-width: 600px; padding: 32px; box-shadow: var(--shadow); max-height: 90vh; overflow-y: auto; }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
@@ -244,11 +243,33 @@
             .print-img-box img { max-width: 100%; max-height: 100%; object-fit: cover !important; }
             tr { page-break-inside: avoid !important; }
         }
+
+        /* ══════════ RESPONSIVIDADE (MOBILE) ══════════ */
+        @media (max-width: 768px) {
+            body { flex-direction: column; overflow-y: auto; }
+            .sidebar { width: 100%; height: auto; padding: 20px; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+            .user-badge { display: none; }
+            .menu-list { flex-direction: row; width: 100%; justify-content: space-around; margin-top: 15px; }
+            .main-content { overflow: visible; }
+            .view-pane { padding: 15px; }
+            .topbar { flex-direction: column; gap: 15px; align-items: flex-start; padding: 20px 15px; }
+            .dashboard-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+            
+            .item-row { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 20px; }
+            .item-row > div { width: 100%; display: flex; justify-content: space-between; align-items: center; }
+            .item-row > div:nth-child(1) { width: auto; position: absolute; right: 20px; top: 20px; }
+            .item-row > div:nth-child(2) { display: none; }
+            .item-info { align-items: flex-start !important; max-width: 85%; }
+            .item-subdados { flex-direction: column; gap: 4px; align-items: flex-start; }
+            
+            .form-grid { grid-template-columns: 1fr; }
+            .form-group-full { grid-column: span 1; }
+            .config-section { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body data-theme="light">
 
-    <!-- GATEWAY DE AUTENTICAÇÃO -->
     <div class="login-overlay" id="loginGatewayScreen">
         <div class="login-box">
             <h2>TECSERVICE Enterprise</h2>
@@ -259,7 +280,6 @@
         </div>
     </div>
 
-    <!-- SIDEBAR INTERATIVA -->
     <nav class="sidebar area-normal-sistema">
         <div>
             <div class="brand">TECSERVICE <span>• Pro</span></div>
@@ -273,7 +293,6 @@
         <button class="theme-toggle-btn" onclick="alternarTemaGlobal()">🌓 Mudar Aparência</button>
     </nav>
 
-    <!-- CONTEÚDO PRINCIPAL -->
     <main class="main-content area-normal-sistema">
         <header class="topbar">
             <div class="page-title">
@@ -286,9 +305,8 @@
             </div>
         </header>
 
-        <!-- ABA 1: ESTOQUE -->
         <section id="paneEstoque" class="view-pane active">
-            <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Buscar por código, nome, marca ou localização..." oninput="renderEstoque()">
+            <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Buscar por código, nome, marca ou caixa..." oninput="renderEstoque()">
             
             <div class="dashboard-grid" id="dashboardFinanceiroGridContainer">
                 <div class="metric-card" style="border-left: 4px solid var(--green);">
@@ -313,12 +331,11 @@
             <div class="produtos-lista" id="renderEstoqueRow"></div>
         </section>
 
-        <!-- ABA 2: HISTÓRICO -->
         <section id="paneHistorico" class="view-pane">
             <div style="display:flex; justify-content:flex-end; margin-bottom:20px;">
                 <button class="btn btn-primario" onclick="abrirModalLancamento()">📝 Registrar Compra</button>
             </div>
-            <div class="config-box" style="width:100%;">
+            <div class="config-box" style="width:100%; overflow-x: auto;">
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -334,10 +351,8 @@
             </div>
         </section>
 
-        <!-- ABA 3: CONFIGURAÇÕES -->
         <section id="paneConfig" class="view-pane">
             <div class="config-section">
-                <!-- PAINEL PERFIS -->
                 <div class="config-box" style="grid-column: span 2; margin-bottom: 10px;">
                     <h4>👥 Configuração Avançada de Perfis e Privilégios</h4>
                     <input type="hidden" id="formPerfilIndex" value="">
@@ -378,7 +393,6 @@
                     <div class="tag-list" id="listConfigPerfisAcesso" style="margin-top:20px;"></div>
                 </div>
 
-                <!-- CATEGORIAS -->
                 <div class="config-box" style="grid-column: span 2; margin-bottom: 10px;">
                     <h4>⚙️ Diretórios / Categorias</h4>
                     <div class="config-input-group">
@@ -388,7 +402,6 @@
                     <div class="tag-list" id="listConfigCategorias"></div>
                 </div>
 
-                <!-- UNIDADES -->
                 <div class="config-box" style="grid-column: span 2; margin-bottom: 10px;">
                     <h4>📏 Unidades de Medida</h4>
                     <div class="config-input-group">
@@ -398,7 +411,6 @@
                     <div class="tag-list" id="listConfigUnidades"></div>
                 </div>
 
-                <!-- FORNECEDORES -->
                 <div class="config-box" style="grid-column: span 2;">
                     <h4>🏢 Fornecedores Homologados</h4>
                     <div class="config-input-group">
@@ -411,10 +423,8 @@
         </section>
     </main>
 
-    <!-- 🟢 BOTÃO FLUTUANTE DA CÂMERA (Visível apenas na tela normal) -->
     <div class="floating-scan-btn area-normal-sistema" onclick="abrirScanner()">📷</div>
 
-    <!-- 🟢 MODAL: SCANNER DE CÂMERA -->
     <div class="modal-overlay" id="modalScanner">
         <div class="modal-content">
             <div class="modal-header">
@@ -427,7 +437,6 @@
         </div>
     </div>
 
-    <!-- 🟢 MODAL: GERADOR DE QR CODE ETIQUETA -->
     <div class="modal-overlay" id="modalGeradorQR">
         <div class="modal-content">
             <div class="modal-header">
@@ -444,7 +453,6 @@
                 </select>
             </div>
 
-            <!-- Área que será transformada em Imagem/Impressa -->
             <div id="etiquetaPrintArea" class="etiqueta-box medio">
                 <div class="etiq-header">TECSERVICE</div>
                 <div class="etiq-body">
@@ -465,7 +473,6 @@
         </div>
     </div>
 
-    <!-- 🟢 MODAL: AUDITORIA RÁPIDA (Contagem após bipar) -->
     <div class="modal-overlay" id="modalAuditoriaRapida">
         <div class="modal-content">
             <div class="modal-header">
@@ -474,14 +481,12 @@
             </div>
             <p id="auditoriaSubtitulo" style="font-size:12px; color:var(--ink-muted); margin-bottom:15px;"></p>
             
-            <!-- A lista de itens a serem contados será injetada aqui -->
             <div id="auditoriaListaItens" style="max-height: 400px; overflow-y: auto;"></div>
 
             <button class="btn btn-primario" style="width:100%; margin-top:20px;" onclick="salvarAuditoria()">Salvar Contagem</button>
         </div>
     </div>
 
-    <!-- MODAL PRINCIPAL: CADASTRO / EDIÇÃO -->
     <div class="modal-overlay" id="modalItemOverlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -503,7 +508,6 @@
                     <input type="text" id="formNome" placeholder="Ex: Papel A4">
                 </div>
                 
-                <!-- 🟢 NOVO CAMPO: Localização/Caixa -->
                 <div class="form-group form-group-full">
                     <label>Localização Física (Ex: Caixa 01, Prateleira A)</label>
                     <input type="text" id="formLocalizacao" placeholder="Ex: Caixa 01">
@@ -586,7 +590,6 @@
         </div>
     </div>
 
-    <!-- MODAL: REGISTRAR COMPRA -->
     <div class="modal-overlay" id="modalLancamentoOverlay">
         <div class="modal-content" style="max-width: 440px;">
             <div class="modal-header">
@@ -618,7 +621,6 @@
         </div>
     </div>
 
-    <!-- MODAL: ESCOPO DE IMPRESSÃO HIERÁRQUICA -->
     <div class="modal-overlay" id="modalPrintOverlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -646,7 +648,6 @@
         </div>
     </div>
 
-    <!-- ÁREA DE IMPRESSÃO (LISTA DE ESTOQUE) -->
     <div class="area-exclusiva-impressao" id="printSystemArea">
         <div class="print-header">
             <h2>TECSERVICE • Checklist de Almoxarifado</h2>
@@ -670,12 +671,11 @@
         </table>
     </div>
 
-    <!-- 🟢 ÁREA DE IMPRESSÃO EXCLUSIVA DA ETIQUETA QR -->
     <div class="area-exclusiva-qr-print" id="qrPrintTarget"></div>
 
     <script>
         // 🚨 CONFIGURAÇÃO DE NUVEM 🚨
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyuFfLF2B8BiT6m7jKDBce2WQZbW4L6mylwTdvNv5gxv-4qKRfnvPG-l-Fv0sKqULAW/exec";
+        const GOOGLE_SCRIPT_URL = "SUA_URL_DO_GOOGLE_SCRIPT_AQUI";
 
         const perfisPadrao = [
             { nome: "Administrativo", pin: "1111", master: true, categorias: [], permissoes: { criar: true, editar: true, deletar: true } },
@@ -767,9 +767,9 @@
             const qrContainer = document.getElementById('qrCodeImageWrapper');
             qrContainer.innerHTML = ''; 
             
-            // O texto do QR é apenas o ID!
+            // O texto do QR é apenas o ID string limpo
             objQrCode = new QRCode(qrContainer, {
-                text: item.id.toString(),
+                text: String(item.id).trim(),
                 width: 100, height: 100,
                 colorDark : "#000000", colorLight : "#ffffff",
                 correctLevel : QRCode.CorrectLevel.H
@@ -806,7 +806,9 @@
             document.getElementById('modalScanner').classList.add('active');
             
             try {
-                if(!html5QrcodeScanner) html5QrcodeScanner = new Html5Qrcode("reader");
+                if(!html5QrcodeScanner) {
+                    html5QrcodeScanner = new Html5Qrcode("reader");
+                }
                 html5QrcodeScanner.start(
                     { facingMode: "environment" }, 
                     { fps: 10, qrbox: 250 },
@@ -814,27 +816,44 @@
                         pararScanner(); // Fecha a câmera ao ler
                         processarLeituraQR(decodedText); 
                     }
-                ).catch(err => { console.log("Câmera indisponível no PC ou Sem permissão"); });
-            } catch (error) { console.error("Erro na câmera"); }
+                ).catch(err => { 
+                    console.log("Câmera indisponível no PC ou Sem permissão", err); 
+                });
+            } catch (error) { console.error("Erro na câmera", error); }
         }
 
         function pararScanner() {
             document.getElementById('modalScanner').classList.remove('active');
             if(html5QrcodeScanner) {
-                try { html5QrcodeScanner.stop().then(() => { html5QrcodeScanner.clear(); }).catch(e => {}); } catch(e) {}
+                try { 
+                    html5QrcodeScanner.stop().then(() => { 
+                        html5QrcodeScanner.clear(); 
+                    }).catch(e => { console.log("Scanner stop ignorado", e); }); 
+                } catch(e) { console.log("Catch interno stop", e); }
             }
         }
 
         function processarLeituraQR(codigoLido) {
-            // Busca o item lido (Pode ser uma Caixa ou um Produto final)
-            const itemLido = dbItems.find(i => i.id == codigoLido || i.codigo == codigoLido);
-            if (!itemLido) { alert(`Nenhum item com ID ${codigoLido} encontrado no sistema.`); return; }
+            if(!codigoLido) return;
+            // 🟢 BLINDAGEM: Limpa espaços em branco ou lixo da leitura
+            const codigoLimpo = String(codigoLido).trim().toLowerCase();
+            
+            // Busca o item lido comparando o código de barras ou o ID interno do sistema
+            const itemLido = dbItems.find(i => 
+                (i.id && String(i.id).trim().toLowerCase() === codigoLimpo) || 
+                (i.codigo && String(i.codigo).trim().toLowerCase() === codigoLimpo)
+            );
+
+            if (!itemLido) { 
+                alert(`❌ Nenhum produto encontrado com o código: [ ${codigoLido} ]\n\nSe este for um código de barras real, digite esse número no campo "Código Interno" ao cadastrar o produto.`); 
+                return; 
+            }
 
             // Lógica PAI E FILHO (WMS): Verifica se existem itens onde a Localização é igual ao Nome do item lido
-            const filhos = dbItems.filter(i => i.localizacao && i.localizacao.toLowerCase() === itemLido.nome.toLowerCase());
+            const filhos = dbItems.filter(i => i.localizacao && i.localizacao.trim().toLowerCase() === itemLido.nome.trim().toLowerCase());
 
             if (filhos.length > 0) {
-                // É UMA CAIXA PAI!
+                // É UMA CAIXA PAI! Lista todos da caixa.
                 abrirModalAuditoria(itemLido.id, filhos, `📦 Conteúdo da: ${itemLido.nome}`);
             } else {
                 // É UM PRODUTO FILHO (Individual)
@@ -977,10 +996,10 @@
                 const podeDeletar = perfilAutenticadoGlobal ? perfilAutenticadoGlobal.permissoes.deletar : true;
 
                 // 🟢 BOTÃO DE QR CODE INSERIDO NO CARD
-                acoesHtml += `<button class="btn-icon" style="color:var(--ink); font-size:18px;" onclick="abrirGeradorQR('${item.id}')" title="Gerar Etiqueta QR">🔲</button>`;
+                acoesHtml += `<button class="btn-icon" onclick="abrirGeradorQR('${item.id}')" title="Gerar Etiqueta QR">🔲</button>`;
 
-                if (podeEditar) acoesHtml += `<button class="btn-icon" style="color:var(--ink); font-size:16px;" onclick="editarItem('${item.id}')">✏️</button>`;
-                if (podeDeletar) acoesHtml += `<button class="btn-icon" style="color:var(--red); font-size:16px;" onclick="deletarItem('${item.id}')">🗑️</button>`;
+                if (podeEditar) acoesHtml += `<button class="btn-icon" onclick="editarItem('${item.id}')" title="Editar">✏️</button>`;
+                if (podeDeletar) acoesHtml += `<button class="btn-icon" style="color:var(--red);" onclick="deletarItem('${item.id}')" title="Deletar">🗑️</button>`;
                 if (!podeEditar && !podeDeletar) acoesHtml = `<span style="font-size:11px; color:var(--ink-muted);">Visualização</span>`;
 
                 const card = document.createElement('div');
