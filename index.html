@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR" data-theme="light">
 <head>
+    <link rel="manifest" href="manifest.json">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TecCheck Enterprise • TECSERVICE</title>
@@ -1212,6 +1213,15 @@
         
         carregarDadosDaNuvem();
         iniciarTempoReal();
+        
+        // Inicia o App Offline (Service Worker)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('App Offline Registrado!'))
+                .catch(err => console.log('Falha no App Offline', err));
+            });
+        }
     </script>
 </body>
 </html>
