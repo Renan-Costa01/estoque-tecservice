@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR" data-theme="light">
 <head>
-    <link rel="manifest" href="manifest.json">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TecCheck Enterprise • TECSERVICE</title>
@@ -9,7 +8,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- 🟢 BIBLIOTECAS EXTERNAS -->
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -23,7 +21,6 @@
         body { background-color: var(--bg); color: var(--ink); display: flex; flex-direction: column; height: 100vh; overflow: hidden; transition: background .3s, color .3s; }
         body::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 80% 20%, var(--dinamica-categoria) 0%, transparent 50%); z-index: -1; pointer-events: none; transition: all 0.6s ease; }
 
-        /* --- BARRA DE STATUS DE AUDITORIA --- */
         .audit-status-bar { display: none; background: var(--amber); color: #000; padding: 10px 40px; font-weight: bold; justify-content: space-between; align-items: center; z-index: 1001; position: relative; }
         body.in-audit .audit-status-bar { display: flex; }
 
@@ -47,7 +44,8 @@
         .menu-item { padding: 14px 18px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 14px; font-weight: 600; color: #64748b; transition: all 0.2s; }
         .menu-item:hover { background: rgba(255,255,255,0.03); color: #fff; }
         .menu-item.active { background: var(--accent) !important; color: #fff !important; box-shadow: 0 0 20px rgba(0, 67, 156, 0.4); }
-        .theme-toggle-btn { width: 100%; margin-top: auto; padding: 12px; border-radius: 10px; background: rgba(255,255,255,0.05); border: none; color: #fff; font-weight: 600; cursor: pointer; }
+        .theme-toggle-btn { width: 100%; padding: 12px; border-radius: 10px; background: rgba(255,255,255,0.05); border: none; color: #fff; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+        .theme-toggle-btn:hover { background: rgba(255,255,255,0.1); }
 
         /* --- CONTEÚDO PRINCIPAL --- */
         .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
@@ -69,7 +67,9 @@
         .btn-sucesso { background: var(--green); color: white; }
         .btn-icon { background: none; border: none; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; color: var(--ink); transition: transform 0.2s; }
         .btn-icon:hover { transform: scale(1.1); }
+        
         .floating-scan-btn { position: fixed; bottom: 30px; right: 30px; width: 65px; height: 65px; border-radius: 50%; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-size: 28px; cursor: pointer; box-shadow: 0 4px 15px rgba(0, 67, 156, 0.4); z-index: 1000; transition: transform 0.2s; }
+        .floating-scan-btn:hover { transform: scale(1.05); }
 
         /* --- LISTAS E CARDS --- */
         .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 32px; }
@@ -116,7 +116,8 @@
 
         .input-btn-group { display: flex; gap: 6px; }
         .input-btn-group select { flex: 1; }
-        .btn-add-inline { background: var(--accent); color: white; border: none; width: 38px; border-radius: 8px; font-weight: bold; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-add-inline { background: var(--accent); color: white; border: none; width: 38px; border-radius: 8px; font-weight: bold; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+        .btn-add-inline:hover { filter: brightness(1.2); }
         
         .sub-form-inline { grid-column: span 2; background: var(--card2); border: 1px dashed var(--accent); padding: 14px; border-radius: 10px; display: none; flex-direction: column; gap: 10px; margin-top: -6px; }
         .sub-form-inline h5 { font-size: 12px; text-transform: uppercase; color: var(--accent); letter-spacing: 0.5px; }
@@ -137,6 +138,9 @@
         .config-section { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
         .config-box { background: var(--card); border: 1px solid var(--border); padding: 24px; border-radius: 10px; box-shadow: var(--shadow); }
         .config-box h4 { margin-bottom: 16px; font-size: 15px; font-weight: 700; color: var(--accent); text-transform: uppercase; }
+        .config-input-group { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .config-input-group input, .config-input-group select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--card2); color: var(--ink); font-size: 13px; }
+        .config-input-group input { flex: 1; min-width: 120px; }
         .tag-list { display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto; }
         .tag-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--card2); border-radius: 8px; font-size: 13px; border: 1px solid var(--border); }
 
@@ -163,7 +167,7 @@
         .audit-path-box { background: var(--accent-dim); border: 1px solid var(--accent); padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 20px; }
         .audit-path-box h4 { color: var(--accent); font-size: 18px; margin-top: 5px; }
 
-        /* ══════════ ENGINE DE IMPRESSÃO (A4 e CUPOM) ══════════ */
+        /* ══════════ ENGINE DE IMPRESSÃO CEGA ══════════ */
         .area-exclusiva-impressao { display: none; }
         .area-exclusiva-qr-print { display: none; }
 
@@ -206,8 +210,8 @@
             /* ETIQUETA QR CODE */
             body.printing-qr .area-exclusiva-qr-print { display: flex !important; justify-content: center !important; align-items: center !important; width: 100% !important; height: 100vh !important; }
         }
-        
-       /* ══════════ RESPONSIVIDADE (MOBILE) ══════════ */
+
+        /* ══════════ RESPONSIVIDADE (MOBILE) ══════════ */
         @media (max-width: 768px) {
             .layout-wrapper { flex-direction: column; overflow-y: auto; }
             .sidebar { width: 100%; height: auto; padding: 15px; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; }
@@ -218,14 +222,11 @@
             .topbar { flex-direction: column; gap: 15px; align-items: flex-start; padding: 20px 15px; }
             .dashboard-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
             
-            /* 🟢 CORREÇÃO DOS CARDS PARA EXIBIR A FOTO E OS BOTÕES ORGANIZADOS */
             .item-row { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 20px; position: relative; }
-            .item-row > div:nth-child(1) { position: absolute; right: 20px; top: 20px; } /* Checkbox no canto */
-            .item-row > div:nth-child(2) { display: flex !important; margin-bottom: 5px; } /* 🟢 Mostra a Foto/Ícone */
+            .item-row > div:nth-child(1) { position: absolute; right: 20px; top: 20px; } 
+            .item-row > div:nth-child(2) { display: flex !important; margin-bottom: 5px; } 
             .item-info { align-items: flex-start !important; width: 100%; }
             .item-subdados { flex-direction: column; gap: 4px; align-items: flex-start; }
-            
-            /* Organiza os botões de ação na parte de baixo do card */
             .item-row > div:last-child { width: 100%; justify-content: flex-start !important; margin-top: 10px; border-top: 1px solid var(--border); padding-top: 15px; }
             
             .form-grid { grid-template-columns: 1fr; }
@@ -235,7 +236,7 @@
 </head>
 <body data-theme="light">
 
-    <!-- 🟢 BARRA DE STATUS DA AUDITORIA -->
+    <!-- BARRA DE STATUS DA AUDITORIA -->
     <div class="audit-status-bar" id="auditStatusBar">
         <span>⚠️ AUDITORIA EM ANDAMENTO</span>
         <button class="btn btn-sucesso" style="padding:8px 15px;" onclick="finalizarRelatorioAuditoria()">CONCLUIR E SALVAR</button>
@@ -278,7 +279,7 @@
                     <h2 id="txtTopTitulo">Estoque Central</h2>
                 </div>
                 <div class="topbar-actions" id="topbarActionsArea">
-                    <button class="btn btn-secundario" onclick="abrirModalIntegracao()">🔄 Integração</button>
+                    <button class="btn btn-secundario" onclick="abrirModalIntegracao()">🔄 Integração (ERP/Excel)</button>
                     <button class="btn btn-sucesso" onclick="iniciarRotaAuditoria()">🧭 Iniciar Auditoria</button>
                     <button class="btn btn-secundario" onclick="abrirModalPrint()">🖨️ Imprimir</button>
                     <button class="btn btn-primario" id="btnActionNovoAtivoTop" onclick="abrirModalItem()">➕ Novo Ativo</button>
@@ -300,12 +301,16 @@
                 <div class="produtos-lista" id="renderEstoqueRow"></div>
             </section>
 
-            <!-- ABA 2: LOCAIS E CAIXAS -->
+            <!-- 🟢 ABA 2: LOCAIS E CAIXAS (Com barra de Pesquisa) -->
             <section id="paneLocais" class="view-pane">
-                <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
-                    <h2>Gestão de Caixas e Prateleiras</h2>
+                <div style="display:flex; justify-content:space-between; margin-bottom:20px; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <h2 style="font-size:20px;">Gestão de Caixas e Prateleiras</h2>
                     <button class="btn btn-primario" onclick="abrirModalLocal()">➕ Nova Caixa</button>
                 </div>
+                
+                <!-- Nova Barra de Pesquisa de Caixas -->
+                <input type="text" id="searchLocais" class="search-bar" placeholder="🔍 Pesquisar caixa ou prateleira específica para auditar..." oninput="renderLocais()">
+                
                 <div id="renderLocaisGrid" class="dashboard-grid"></div>
             </section>
 
@@ -378,7 +383,7 @@
     <!-- BOTÃO FLUTUANTE DA CÂMERA -->
     <div class="floating-scan-btn area-normal-sistema" onclick="abrirScanner()">📷</div>
 
-    <!-- 🟢 MODAIS (Únicos) 🟢 -->
+    <!-- 🟢 MODAIS DA APLICAÇÃO 🟢 -->
 
     <!-- INTEGRAÇÃO / EXPORT / IMPORT -->
     <div class="modal-overlay" id="modalIntegracao">
@@ -397,27 +402,30 @@
             <div style="background:var(--card2); padding:15px; border-radius:10px; border:1px dashed var(--accent);">
                 <h4 style="margin-bottom:10px; font-size:14px; color:var(--accent);">📥 Importação em Massa</h4>
                 <p style="font-size:12px; color:var(--ink-muted); margin-bottom:15px;">A ordem das colunas do seu Excel deve ser:<br><b>CÓDIGO | NOME | LOCALIZAÇÃO/CAIXA | ESTOQUE ATUAL | PREÇO CUSTO</b></p>
-                <textarea id="importDataTexto" rows="6" placeholder="Cole aqui os dados copiados da planilha..." style="width:100%; border:1px solid var(--border); padding:10px; border-radius:8px;"></textarea>
+                <textarea id="importDataTexto" rows="6" placeholder="Cole aqui os dados copiados da planilha..." style="width:100%; border:1px solid var(--border); padding:10px; border-radius:8px; outline:none;"></textarea>
                 <button class="btn btn-primario" style="width:100%; margin-top:10px;" onclick="processarImportacaoExcel()">Processar Itens</button>
             </div>
         </div>
     </div>
 
-    <!-- ROTA DE AUDITORIA INTELIGENTE -->
+    <!-- 🟢 ROTA DE AUDITORIA INTELIGENTE (Com Botões de Voltar e Cancelar) -->
     <div class="modal-overlay" id="modalRotaAuditoria">
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Sessão de Auditoria</h3>
-                <button class="btn-icon" onclick="encerrarRotaAuditoria()">✕</button>
+                <button class="btn-icon" onclick="cancelarRotaAuditoria()">✕</button>
             </div>
             <div class="audit-path-box">
                 <p style="font-size:12px; font-weight:bold; color:var(--ink-muted); text-transform:uppercase;">Próximo passo:</p>
                 <h4 id="auditRotaLocalNome">Vá para o Local...</h4>
             </div>
             <div id="auditRotaListaItens" style="max-height: 300px; overflow-y: auto; margin-bottom:20px;"></div>
-            <div style="display:flex; gap:10px;">
-                <button class="btn btn-secundario" style="flex:1;" onclick="pularRotaAuditoria()">Pular Local</button>
-                <button class="btn btn-primario" style="flex:2;" onclick="salvarPassoRotaAuditoria()">Salvar e Ir p/ Próximo</button>
+            
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button class="btn btn-secundario" style="flex:1; border-color:var(--red); color:var(--red);" onclick="cancelarRotaAuditoria()">❌ Cancelar / Sair</button>
+                <button class="btn btn-secundario" style="flex:1;" id="btnVoltarAudit" onclick="voltarPassoRotaAuditoria()">⬅️ Voltar Caixa</button>
+                <button class="btn btn-secundario" style="flex:1;" onclick="pularRotaAuditoria()">Pular ➡️</button>
+                <button class="btn btn-primario" style="flex:100%; margin-top:5px;" id="btnNextStepAudit" onclick="salvarPassoRotaAuditoria()">Salvar e Ir p/ Próximo</button>
             </div>
         </div>
     </div>
@@ -480,7 +488,7 @@
         </div>
     </div>
 
-    <!-- AUDITORIA RÁPIDA (Scanner Livre) -->
+    <!-- AUDITORIA RÁPIDA (Scanner Livre ou Botão Direto) -->
     <div class="modal-overlay" id="modalAuditoriaRapida">
         <div class="modal-content">
             <div class="modal-header">
@@ -514,7 +522,7 @@
         </div>
     </div>
 
-    <!-- 🟢 CADASTRO / EDIÇÃO DE ATIVO (CORRIGIDO) -->
+    <!-- CADASTRO / EDIÇÃO DE ATIVO -->
     <div class="modal-overlay" id="modalItemOverlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -525,9 +533,8 @@
             <div class="form-grid">
                 <div class="form-group"><label>Código Interno</label><input type="text" id="formCodigo" placeholder="Ex: MAT-0482"></div>
                 <div class="form-group"><label>Marca do Material</label><input type="text" id="formMarca" placeholder="Ex: Chamex"></div>
-                <div class="form-group form-group-full"><label>Descrição / Especificação Completa</label><input type="text" id="formNome" placeholder="Ex: Papel A4"></div>
+                <div class="form-group form-group-full"><label>Descrição Completa</label><input type="text" id="formNome" placeholder="Ex: Papel A4"></div>
                 
-                <!-- 🟢 CAMPO DE LOCALIZAÇÃO (Tamanho e layout idêntico a Categoria) -->
                 <div class="form-group form-group-full">
                     <label>Localização (Caixa / Prateleira)</label>
                     <div class="input-btn-group">
@@ -567,7 +574,6 @@
                         <button type="button" class="btn btn-primario" onclick="salvarCategoriaInline()">Salvar</button>
                     </div>
                 </div>
-
                 <div class="sub-form-inline" id="inlineFormUnidade">
                     <h5>Nova Unidade</h5>
                     <div class="inline-inputs">
@@ -628,7 +634,7 @@
         </div>
     </div>
 
-    <!-- 🟢 IMPRESSÃO DINÂMICA (A4 e CUPOM COM SELEÇÃO DE COLUNAS) -->
+    <!-- IMPRESSÃO DINÂMICA -->
     <div class="modal-overlay" id="modalPrintOverlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -685,14 +691,11 @@
                 <div id="printSystemTimestamp"></div>
             </div>
             <table class="print-table">
-                <thead id="printTHead">
-                    <!-- Gerado dinamicamente -->
-                </thead>
+                <thead id="printTHead"></thead>
                 <tbody id="printSystemTableBody"></tbody>
             </table>
         </div>
     </div>
-    
     <div class="area-exclusiva-qr-print" id="qrPrintTarget"></div>
 
     <script>
@@ -701,19 +704,12 @@
 
         // Variáveis Globais de Estado
         let dbItems = []; let dbLocais = []; let dbCategoriasComplexas = [{nome: "Geral", cor:"#00439c"}]; 
-        let dbUnidades = ["un", "cx"]; 
-        let dbFornecedores = []; // 🟢 RESTAURADO PARA NÃO QUEBRAR O JAVASCRIPT
-        let dbHistorico = []; 
+        let dbUnidades = ["un", "cx"]; let dbFornecedores = []; let dbHistorico = []; 
         let dbPerfisAcesso = [{ nome: "Admin", pin: "1111", master: true, categorias:[], permissoes:{criar:true, editar:true, deletar:true} }];
         let dbAuditorias = []; 
         
-        let perfilAutenticadoGlobal = null; 
-        let filtroFiltroEstoque = 'todos';
-        let html5QrcodeScanner = null; 
-        let objQrCode = null;
-        let loopSincronismo = null;
-        let emAuditoria = false;
-
+        let perfilAutenticadoGlobal = null; let filtroFiltroEstoque = 'todos';
+        let html5QrcodeScanner = null; let objQrCode = null; let loopSincronismo = null; let emAuditoria = false;
         let rotaLocaisAProcessar = []; let rotaIndiceAtual = 0; let logAuditoriaSessao = [];
 
         // --- GOOGLE ENGINE E SINCRONISMO TEMPO REAL ---
@@ -724,31 +720,30 @@
                 dbLocais = (locs && locs.length > 0) ? locs : [{ id: "L01", nome: "Caixa 01", tipo: "Caixa" }, { id: "L02", nome: "Prateleira B", tipo: "Prateleira" }];
                 dbCategoriasComplexas = JSON.parse(localStorage.getItem('tec_cat_complexas')) || [{nome: "Geral", cor:"#00439c"}];
                 dbUnidades = JSON.parse(localStorage.getItem('tec_unidades')) || ["un", "cx"];
-                dbFornecedores = JSON.parse(localStorage.getItem('tec_fornecedores')) || []; // 🟢 Fornecedores Restabelecido
+                dbFornecedores = JSON.parse(localStorage.getItem('tec_fornecedores')) || [];
                 dbHistorico = JSON.parse(localStorage.getItem('tec_historico')) || [];
                 dbAuditorias = JSON.parse(localStorage.getItem('tec_auditorias')) || [];
                 dbPerfisAcesso = JSON.parse(localStorage.getItem('tec_perfis')) || [{ nome: "Admin", pin: "1111", master: true }];
-            
-            sincronizarLocaisAntigos();
-            renderEstoque(); popularCombosFormularios(); renderLocais(); renderHistorico(); renderConfiguracoes();
-            verificarSessaoSalva();
-        }
+                
+                sincronizarLocaisAntigos();
+                renderEstoque(); popularCombosFormularios(); renderLocais(); renderHistorico(); renderConfiguracoes();
+                verificarSessaoSalva();
+                return;
             }
             try {
                 const res = await fetch(GOOGLE_SCRIPT_URL); const data = await res.json();
                 if (data.items) { 
                     dbItems = data.items; dbLocais = data.locais || []; dbHistorico = data.history || []; dbAuditorias = data.auditorias || [];
                     dbCategoriasComplexas = data.categories || [{nome: "Geral", cor:"#00439c"}]; dbUnidades = data.units || ["un"]; 
-                    dbFornecedores = data.suppliers || []; // 🟢 Fornecedores Restabelecido
-                    dbPerfisAcesso = data.profiles || [{ nome: "Admin", pin: "1111", master: true }];
+                    dbFornecedores = data.suppliers || []; dbPerfisAcesso = data.profiles || [{ nome: "Admin", pin: "1111", master: true }];
                 }
             } catch (e) { console.error(e); }
             
             sincronizarLocaisAntigos();
             renderEstoque(); popularCombosFormularios(); renderLocais(); renderHistorico(); renderConfiguracoes();
+            verificarSessaoSalva();
         }
 
-        // 🟢 SCRIPT DE MIGRAÇÃO AUTOMÁTICA
         function sincronizarLocaisAntigos() {
             let locaisAlterados = false;
             dbItems.forEach(item => {
@@ -790,7 +785,7 @@
             } catch (e) {}
         }
         function iniciarTempoReal() { loopSincronismo = setInterval(sincronismoSilencioso, 10000); }
-        function obterIconeAutomatico(nome) { const n = nome ? nome.toLowerCase() : ''; if(n.includes('papel') || n.includes('caderno') || n.includes('caneta')) return '📄'; if(n.includes('contatora')||n.includes('fio') || n.includes('led') || n.includes('lâmpada')) return '⚡'; if(n.includes('detergente')||n.includes('sabão')) return '🧼'; return '📦'; }
+        function obterIconeAutomatico(nome) { const n = nome ? nome.toLowerCase() : ''; if(n.includes('papel') || n.includes('caderno')) return '📄'; if(n.includes('contatora')||n.includes('fio') || n.includes('led') || n.includes('lâmpada')) return '⚡'; if(n.includes('detergente')||n.includes('sabão')) return '🧼'; return '📦'; }
 
         // --- EXPORTAÇÃO E IMPORTAÇÃO ---
         function abrirModalIntegracao() { document.getElementById('modalIntegracao').classList.add('active'); document.getElementById('importDataTexto').value = ''; }
@@ -826,14 +821,36 @@
             alert(`✅ ${inseridos} itens importados com sucesso!`);
         }
 
-        // --- ROTA DE AUDITORIA ---
+        // 🟢 --- ROTA DE AUDITORIA INTELIGENTE --- 🟢
         function iniciarRotaAuditoria() {
             if(dbLocais.length === 0) return alert("Você precisa criar Locais/Caixas primeiro.");
             if(!confirm("Iniciar varredura do estoque guiada pelo sistema?")) return;
             emAuditoria = true; document.body.classList.add('in-audit'); logAuditoriaSessao = []; rotaLocaisAProcessar = [...dbLocais]; rotaIndiceAtual = 0; carregarPassoAuditoria();
         }
+        
         function carregarPassoAuditoria() {
             if(rotaIndiceAtual >= rotaLocaisAProcessar.length) { concluirSessaoAuditoriaCompleta(); return; }
+            
+            // Controle dos botões de navegação
+            const btnNext = document.getElementById('btnNextStepAudit');
+            const btnVoltar = document.getElementById('btnVoltarAudit');
+            
+            if (rotaIndiceAtual === rotaLocaisAProcessar.length - 1) {
+                btnNext.textContent = "Salvar e Concluir Auditoria";
+                btnNext.style.background = "var(--green)";
+            } else {
+                btnNext.textContent = "Salvar e Ir p/ Próximo";
+                btnNext.style.background = "var(--accent)";
+            }
+
+            if (rotaIndiceAtual === 0) {
+                btnVoltar.disabled = true;
+                btnVoltar.style.opacity = '0.5';
+            } else {
+                btnVoltar.disabled = false;
+                btnVoltar.style.opacity = '1';
+            }
+
             const localAtual = rotaLocaisAProcessar[rotaIndiceAtual];
             const itensDoLocal = dbItems.filter(i => i.localizacao === localAtual.nome);
             document.getElementById('modalRotaAuditoria').classList.add('active');
@@ -843,6 +860,7 @@
                 container.innerHTML = itensDoLocal.map(item => `<div class="auditoria-card"><div style="flex:1;"><h4 style="font-size:14px; margin-bottom:4px;">${item.nome}</h4><span style="font-size:11px; color:var(--ink-muted);">Registrado: ${item.atual}</span></div><div><input type="number" class="auditoria-input-rota" data-id="${item.id}" data-old="${item.atual}" value="${item.atual}" min="0"></div></div>`).join('');
             }
         }
+        
         function salvarPassoRotaAuditoria() {
             document.querySelectorAll('.auditoria-input-rota').forEach(input => {
                 const idItem = input.getAttribute('data-id'); const oldVal = parseInt(input.getAttribute('data-old')); const novaQtd = parseInt(input.value);
@@ -850,8 +868,28 @@
             });
             rotaIndiceAtual++; carregarPassoAuditoria();
         }
+        
+        // NOVO: Volta um passo na auditoria
+        function voltarPassoRotaAuditoria() {
+            if (rotaIndiceAtual > 0) {
+                rotaIndiceAtual--;
+                carregarPassoAuditoria();
+            }
+        }
+        
         function pularRotaAuditoria() { rotaIndiceAtual++; carregarPassoAuditoria(); }
-        function encerrarRotaAuditoria() { if(confirm("Deseja interromper a auditoria? O que você já alterou será salvo.")) concluirSessaoAuditoriaCompleta(); }
+        
+        // NOVO: Cancela e descarta a auditoria
+        function cancelarRotaAuditoria() { 
+            if(confirm("Deseja cancelar esta auditoria? As caixas que você já contou permanecerão com os novos valores no sistema, mas a rota será encerrada e nenhum relatório será gerado.")) {
+                document.getElementById('modalRotaAuditoria').classList.remove('active'); 
+                emAuditoria = false; 
+                document.body.classList.remove('in-audit');
+                logAuditoriaSessao = []; // Descarta o log pois foi abortado
+                renderEstoque();
+            }
+        }
+        
         function concluirSessaoAuditoriaCompleta() {
             document.getElementById('modalRotaAuditoria').classList.remove('active'); emAuditoria = false; document.body.classList.remove('in-audit');
             if (logAuditoriaSessao.length > 0) { dbAuditorias.push({ id: Date.now(), data: new Date().toISOString(), log: logAuditoriaSessao }); alert(`✅ Auditoria finalizada. ${logAuditoriaSessao.length} correções registradas no Log.`); } else { alert("✅ Auditoria finalizada. Nenhuma divergência de estoque foi encontrada!"); }
@@ -880,31 +918,21 @@
             document.body.className = 'printing print-a4'; window.print(); setTimeout(() => { document.body.className = 'light'; }, 500);
         }
 
-        // --- IMPRESSÃO DE ESTOQUE (A4 OU CUPOM) ---
+        // --- IMPRESSÃO DE ESTOQUE ---
         function abrirModalPrint() { 
             document.getElementById('modalPrintOverlay').classList.add('active'); 
             const container = document.getElementById('printCategoriasCheckboxList'); container.innerHTML = ''; 
-            
             let categoriasFiltradasParaArvore = dbCategoriasComplexas;
-            if (perfilAutenticadoGlobal && !perfilAutenticadoGlobal.master) { 
-                categoriasFiltradasParaArvore = dbCategoriasComplexas.filter(c => perfilAutenticadoGlobal.categorias.includes(c.nome)); 
-            } else {
+            if (perfilAutenticadoGlobal && !perfilAutenticadoGlobal.master) { categoriasFiltradasParaArvore = dbCategoriasComplexas.filter(c => perfilAutenticadoGlobal.categorias.includes(c.nome)); } else {
                 container.innerHTML += `<div style="margin-bottom:8px;"><label class="print-selector-item" style="font-weight: 700;"><input type="checkbox" id="printSelectAllCategoriesTrigger" checked onchange="alternarTodasCategoriasImpressao(this)"><span>🌐 [Selecionar Todo o Inventário]</span></label></div><div class="print-selector-divider"></div>`;
             }
-
             categoriasFiltradasParaArvore.forEach((cat, index) => {
                 const itensDaCategoria = dbItems.filter(item => item.categoria === cat.nome);
                 let itemsHtml = itensDaCategoria.length === 0 ? `<div style="font-size:11px; color:#888;">Vazio</div>` : itensDaCategoria.map(item => `<div><label class="print-item-avulso-row"><input type="checkbox" value="${item.id}" checked class="print-item-child-checkbox" data-parent-cat="${cat.nome}" onchange="sincronizarPaiComFilhos('${cat.nome}')"><span>${item.nome}</span></label></div>`).join('');
-                
-                container.innerHTML += `
-                    <div style="margin-bottom:6px;">
-                        <label class="print-selector-item" style="font-weight:600;"><input type="checkbox" value="${cat.nome}" checked class="print-cat-parent-checkbox" data-cat="${cat.nome}" onchange="alternarFilhosDaCategoria(this)"><span style="width:10px; height:10px; background:${cat.cor}; border-radius:50%; display:inline-block;"></span><span>${cat.nome}</span></label>
-                        <div class="items-avulsos-box" id="items-box-print-${index}">${itemsHtml}</div>
-                    </div>`;
+                container.innerHTML += `<div style="margin-bottom:6px;"><label class="print-selector-item" style="font-weight:600;"><input type="checkbox" value="${cat.nome}" checked class="print-cat-parent-checkbox" data-cat="${cat.nome}" onchange="alternarFilhosDaCategoria(this)"><span style="width:10px; height:10px; background:${cat.cor}; border-radius:50%; display:inline-block;"></span><span>${cat.nome}</span></label><div class="items-avulsos-box" id="items-box-print-${index}">${itemsHtml}</div></div>`;
             });
             atualizarInterfacePrint();
         }
-
         function alternarFilhosDaCategoria(paiCheckbox) { const catNome = paiCheckbox.getAttribute('data-cat'); document.querySelectorAll(`.print-item-child-checkbox[data-parent-cat="${catNome}"]`).forEach(filho => filho.checked = paiCheckbox.checked); verificarStatusSelecaoMaster(); }
         function sincronizarPaiComFilhos(catNome) { const pai = document.querySelector(`.print-cat-parent-checkbox[data-cat="${catNome}"]`); const filhos = document.querySelectorAll(`.print-item-child-checkbox[data-parent-cat="${catNome}"]`); let algum = false; filhos.forEach(f => { if(f.checked) algum = true; }); pai.checked = algum; verificarStatusSelecaoMaster(); }
         function alternarTodasCategoriasImpressao(master) { document.querySelectorAll('.print-cat-parent-checkbox, .print-item-child-checkbox').forEach(cb => cb.checked = master.checked); }
@@ -924,21 +952,11 @@
             const tbody = document.getElementById('printSystemTableBody'); tbody.innerHTML = ''; 
             document.getElementById('printSystemTimestamp').textContent = `Emitido em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`;
             
-            // Lógica de colunas
-            const colFoto = document.getElementById('colFoto').checked; 
-            const colCod = document.getElementById('colCod').checked; 
-            const colDesc = document.getElementById('colDesc').checked; 
-            const colCat = document.getElementById('colCat').checked; 
-            const colLocal = document.getElementById('colLocal').checked; 
-            const colEst = document.getElementById('colEst').checked; 
-            const colMin = document.getElementById('colMin').checked; 
-            const colPreco = document.getElementById('colPreco').checked; 
-            const colConf = document.getElementById('colConf').checked;
+            const colFoto = document.getElementById('colFoto').checked; const colCod = document.getElementById('colCod').checked; const colDesc = document.getElementById('colDesc').checked; const colCat = document.getElementById('colCat').checked; const colLocal = document.getElementById('colLocal').checked; const colEst = document.getElementById('colEst').checked; const colMin = document.getElementById('colMin').checked; const colPreco = document.getElementById('colPreco').checked; const colConf = document.getElementById('colConf').checked;
             
             const thead = document.getElementById('printTHead');
             if(formato === 'cupom') {
-                document.getElementById('printDocTitle').textContent = "CONFERENCIA ESTOQUE"; 
-                thead.innerHTML = ``; 
+                document.getElementById('printDocTitle').textContent = "CONFERENCIA ESTOQUE"; thead.innerHTML = ``; 
             } else {
                 document.getElementById('printDocTitle').textContent = "TECSERVICE • Relatório Completo";
                 let thHTML = `<tr>`;
@@ -997,23 +1015,61 @@
             setTimeout(() => { document.body.className = 'light'; }, 500); 
         }
 
-        // --- GESTÃO DE LOCAIS / CAIXAS ---
+        // 🟢 --- GESTÃO DE LOCAIS / CAIXAS (Com Pesquisa e Auditoria Direta) ---
         function renderLocais() {
             const container = document.getElementById('renderLocaisGrid'); container.innerHTML = '';
             const dashLoc = document.getElementById('dashLocais'); if(dashLoc) dashLoc.textContent = dbLocais.length;
+            
+            const termoBuscaLocais = document.getElementById('searchLocais').value.toLowerCase();
+            
             dbLocais.forEach(loc => {
-                const qtdItens = dbItems.filter(i => i.localizacao === loc.nome).length;
+                if(termoBuscaLocais && !loc.nome.toLowerCase().includes(termoBuscaLocais)) return;
+                
+                const itensDoLocal = dbItems.filter(i => i.localizacao === loc.nome);
+                const qtdItens = itensDoLocal.length;
+
+                let listaItensHtml = '';
+                if(qtdItens > 0) {
+                    listaItensHtml = `<div style="margin-top:10px; max-height:100px; overflow-y:auto; background:var(--bg); padding:10px; border-radius:8px; border:1px solid var(--border);">
+                        <ul style="list-style:none; padding:0; margin:0; font-size:11px; color:var(--ink-muted);">`;
+                    itensDoLocal.forEach(item => {
+                        listaItensHtml += `<li style="margin-bottom:4px; display:flex; justify-content:space-between; border-bottom:1px dashed var(--border); padding-bottom:2px;">
+                            <span style="font-weight:bold; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:70%;" title="${item.nome}">${item.nome}</span>
+                            <span>${item.atual} ${item.unidade || ''}</span>
+                        </li>`;
+                    });
+                    listaItensHtml += `</ul></div>`;
+                } else {
+                    listaItensHtml = `<div style="margin-top:10px; padding:10px; text-align:center; background:var(--bg); border-radius:8px; border:1px dashed var(--border);"><span style="font-size:11px; color:var(--red);">Caixa vazia no sistema</span></div>`;
+                }
+
                 container.innerHTML += `
-                    <div class="metric-card" style="position:relative;">
-                        <div style="display:flex; justify-content:space-between; align-items:center;"><h3 style="font-size:16px; color:var(--ink);">${loc.nome}</h3><span style="font-size:24px;">${loc.tipo === 'Caixa' ? '📦' : '📏'}</span></div>
-                        <p style="font-size:12px; font-weight:normal; color:var(--ink-muted); margin-top:5px;">${qtdItens} itens vinculados</p>
-                        <div style="display:flex; gap:10px; margin-top:15px;">
-                            <button class="btn btn-secundario" style="flex:1;" onclick="abrirGeradorQRLocais('${loc.id}')">🔲 Etiqueta</button>
-                            <button class="btn btn-secundario" style="color:var(--red);" onclick="deletarLocal('${loc.id}')">🗑️</button>
+                    <div class="metric-card" style="position:relative; display:flex; flex-direction:column; justify-content:space-between;">
+                        <div>
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <h3 style="font-size:16px; color:var(--ink);">${loc.nome}</h3>
+                                <span style="font-size:24px;">${loc.tipo === 'Caixa' ? '📦' : '📏'}</span>
+                            </div>
+                            <p style="font-size:12px; font-weight:normal; color:var(--ink-muted); margin-top:5px;">${qtdItens} itens vinculados</p>
+                            ${listaItensHtml}
+                        </div>
+                        <div style="display:flex; gap:10px; margin-top:15px; flex-wrap:wrap;">
+                            <button class="btn btn-sucesso" style="flex:100%; padding:8px;" onclick="auditarCaixaDireto('${loc.id}')">🧭 Auditar Caixa</button>
+                            <button class="btn btn-secundario" style="flex:1; padding:8px;" onclick="abrirGeradorQRLocais('${loc.id}')">🔲 Etiqueta</button>
+                            <button class="btn btn-secundario" style="color:var(--red); padding:8px;" onclick="deletarLocal('${loc.id}')">🗑️</button>
                         </div>
                     </div>`;
             });
         }
+        
+        function auditarCaixaDireto(idLocal) {
+            const loc = dbLocais.find(l => l.id == idLocal);
+            if(!loc) return;
+            const itensDaCaixa = dbItems.filter(i => i.localizacao === loc.nome);
+            if(itensDaCaixa.length === 0) return alert("Esta caixa está vazia no sistema. Nenhum item para auditar.");
+            abrirModalAuditoria(itensDaCaixa, `📦 Auditoria: ${loc.nome}`);
+        }
+
         function abrirModalLocal() { document.getElementById('modalLocalOverlay').classList.add('active'); document.getElementById('locNome').value = ''; }
         function salvarLocal() {
             const nome = document.getElementById('locNome').value.trim(); if(!nome) return alert("Digite um nome para o local.");
@@ -1086,12 +1142,11 @@
             let alterados = 0; logAuditoriaSessao = [];
             document.querySelectorAll('.auditoria-input').forEach(input => { const idItem = input.getAttribute('data-id'); const novaQtd = parseInt(input.value); const itemRef = dbItems.find(i => i.id == idItem); if (itemRef && itemRef.atual !== novaQtd) { logAuditoriaSessao.push({ nome: itemRef.nome, de: itemRef.atual, para: novaQtd, local: itemRef.localizacao }); itemRef.atual = novaQtd; alterados++; } });
             fecharModal('modalAuditoriaRapida'); renderEstoque();
-            if(!emAuditoria) { if(alterados > 0) { dbAuditorias.push({ id: Date.now(), data: new Date().toISOString(), log: logAuditoriaSessao }); salvarDadosNaNuvem(); alert(`✅ Estoque atualizado! (${alterados} itens alterados)`); } } else { if(alterados > 0) alert(`Sessão registrou a contagem de ${alterados} itens.`); }
+            if(!emAuditoria) { if(alterados > 0) { dbAuditorias.push({ id: Date.now(), data: new Date().toISOString(), log: logAuditoriaSessao }); salvarDadosNaNuvem(); alert(`✅ Estoque atualizado! (${alterados} itens alterados)`); } }
         }
 
-        // --- AUTENTICAÇÃO E NAVEGAÇÃO ---
+        // --- AUTENTICAÇÃO E SESSÃO ---
         function verificarCredenciaisAcesso(pinAutomatico = null) { 
-            // Pega o PIN automático da memória, ou o que o usuário digitou na tela
             const pinDigitado = pinAutomatico || document.getElementById('userAccessPinInput').value.trim(); 
             const perfilEncontrado = dbPerfisAcesso.find(p => p.pin === pinDigitado); 
             
@@ -1100,7 +1155,6 @@
                 document.getElementById('loginGatewayScreen').style.display = 'none'; 
                 document.getElementById('userPerfilActiveLabel').textContent = perfilEncontrado.nome; 
                 
-                // 🟢 SALVA O LOGIN NA MEMÓRIA DO CELULAR
                 if (!pinAutomatico) {
                     localStorage.setItem('tec_session_pin', pinDigitado);
                     localStorage.setItem('tec_session_time', Date.now().toString());
@@ -1109,7 +1163,6 @@
                 aplicarFiltrosEPolíticasDeSeguranca(); 
                 iniciarTempoReal(); 
             } else { 
-                // Só mostra erro se for digitação manual
                 if (!pinAutomatico) {
                     const err = document.getElementById('loginErrorMessage'); 
                     err.style.display = 'block'; 
@@ -1121,16 +1174,11 @@
         function verificarSessaoSalva() {
             const pinSalvo = localStorage.getItem('tec_session_pin');
             const tempoSalvo = localStorage.getItem('tec_session_time');
-            
             if (pinSalvo && tempoSalvo) {
-                // Calcula quantas horas se passaram desde o login
                 const horasPassadas = (Date.now() - parseInt(tempoSalvo)) / (1000 * 60 * 60);
-                
-                // Se faz menos de 12 horas, loga direto!
                 if (horasPassadas < 12) {
                     verificarCredenciaisAcesso(pinSalvo);
                 } else {
-                    // Passou de 12h, a sessão expira e limpa os dados
                     fazerLogout();
                 }
             }
@@ -1139,10 +1187,15 @@
         function fazerLogout() {
             localStorage.removeItem('tec_session_pin');
             localStorage.removeItem('tec_session_time');
-            location.reload(); // Recarrega a página de volta pro cadeado
+            location.reload(); 
         }
 
-        
+        function aplicarFiltrosEPolíticasDeSeguranca() {
+            if (!perfilAutenticadoGlobal) return;
+            const menuHist = document.getElementById('menuHistorico'); const menuConf = document.getElementById('menuConfig'); const menuLoc = document.getElementById('menuLocais'); const btnNovo = document.getElementById('btnActionNovoAtivoTop'); const dashFin = document.getElementById('dashboardFinanceiroGridContainer');
+            if (perfilAutenticadoGlobal.master) { menuHist.style.display = 'flex'; menuConf.style.display = 'flex'; menuLoc.style.display = 'flex'; btnNovo.style.display = 'inline-flex'; dashFin.style.display = 'grid'; filtroFiltroEstoque = 'todos'; } else { menuHist.style.display = 'none'; menuConf.style.display = 'none'; menuLoc.style.display = 'none'; dashFin.style.display = 'none'; btnNovo.style.display = perfilAutenticadoGlobal.permissoes && perfilAutenticadoGlobal.permissoes.criar ? 'inline-flex' : 'none'; if (perfilAutenticadoGlobal.categorias && perfilAutenticadoGlobal.categorias.length > 0) filtroFiltroEstoque = perfilAutenticadoGlobal.categorias[0]; else filtroFiltroEstoque = 'nenhum'; }
+            renderEstoque();
+        }
         function alternarTemaGlobal() { const dark = document.body.getAttribute('data-theme') === 'dark'; document.body.setAttribute('data-theme', dark ? 'light' : 'dark'); if(filtroFiltroEstoque === 'todos' || filtroFiltroEstoque === 'criticos') document.body.style.setProperty('--dinamica-categoria', !dark ? 'rgba(0, 67, 156, 0.25)' : 'rgba(0, 67, 156, 0.05)'); else { const objetoCat = dbCategoriasComplexas.find(c => c.nome === filtroFiltroEstoque); if(objetoCat) document.body.style.setProperty('--dinamica-categoria', objetoCat.cor + (!dark ? '40' : '15')); } }
         function navegar(alvo) { document.querySelectorAll('.view-pane').forEach(el => el.classList.remove('active')); document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active')); document.getElementById('topbarActionsArea').style.display = alvo === 'estoque' ? 'flex' : 'none'; if(alvo === 'estoque') { document.getElementById('paneEstoque').classList.add('active'); document.getElementById('menuEstoque').classList.add('active'); renderEstoque(); } else if (alvo === 'locais') { document.getElementById('paneLocais').classList.add('active'); document.getElementById('menuLocais').classList.add('active'); renderLocais(); } else if (alvo === 'historico') { document.getElementById('paneHistorico').classList.add('active'); document.getElementById('menuHistorico').classList.add('active'); renderHistorico(); } else if (alvo === 'config') { document.getElementById('paneConfig').classList.add('active'); document.getElementById('menuConfig').classList.add('active'); renderConfiguracoes(); } }
 
@@ -1192,7 +1245,6 @@
             fecharModal('modalItemOverlay'); renderEstoque(); salvarDadosNaNuvem();
         }
         function deletarItem(id) { if(confirm("Confirmar exclusão?")) { dbItems = dbItems.filter(m => m.id != id); renderEstoque(); salvarDadosNaNuvem(); } }
-        
         function processarImagemLocal(input) { const arquivo = input.files[0]; if (arquivo) { const leitor = new FileReader(); leitor.onload = function(e) { document.getElementById('formFotoBase64').value = e.target.result; alert("✅ Imagem carregada com sucesso!"); }; leitor.readAsDataURL(arquivo); } }
         function toggleSubForm(id) { const f = document.getElementById(id); f.style.display = f.style.display === 'flex' ? 'none' : 'flex'; }
         
@@ -1206,7 +1258,6 @@
             selUn.innerHTML = ''; dbUnidades.forEach(u => selUn.innerHTML += `<option value="${u}">${u}</option>`);
             selForn.innerHTML = '<option value="Nenhum">Nenhum Fornecedor</option>'; dbFornecedores.forEach(f => selForn.innerHTML += `<option value="${f.nome}">${f.nome}</option>`);
             
-            // 🟢 A MÁGICA DOS LOCAIS RESTAURADA COM SUCESSO AQUI
             selLoc.innerHTML = '<option value="">(Localização Geral)</option>'; 
             dbLocais.forEach(l => selLoc.innerHTML += `<option value="${l.nome}">${l.nome}</option>`);
             
@@ -1214,7 +1265,6 @@
             dbCategoriasComplexas.forEach(c => { containerCheckboxesConfig.innerHTML += `<label class="print-selector-item"><input type="checkbox" value="${c.nome}" class="config-perfil-cat-checkbox-item" onchange="verificarStatusSelecaoMasterPerfil()"><span>${c.nome}</span></label>`; });
         }
 
-        // --- SISTEMAS DE TRATAMENTO DOS PERFIS ---
         function adicionarPerfilAcessoCorporativo() {
             const indexEdicao = document.getElementById('formPerfilIndex').value; const nome = document.getElementById('addPerfilNome').value.trim(); const pin = document.getElementById('addPerfilPin').value.trim(); const master = document.getElementById('addPerfilMasterToggle').checked;
             if(!nome || !pin) return alert("Preencha Nome e PIN!");
@@ -1265,9 +1315,7 @@
         function fecharModal(id) { document.getElementById(id).classList.remove('active'); }
         
         carregarDadosDaNuvem();
-        iniciarTempoReal();
         
-        // Inicia o App Offline (Service Worker)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
