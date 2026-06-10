@@ -1,0 +1,17 @@
+{
+  "name": "TecCheck Enterprise",
+  "short_name": "TecCheck",
+  "description": "Sistema de Gestão Logística e Almoxarifado",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#070a12",
+  "theme_color": "#00439c",
+  "icons": [
+    {
+      "src": "https://tecservice.com.br/wp-content/uploads/2020/04/tecservice-nr12.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
