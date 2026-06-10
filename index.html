@@ -206,8 +206,8 @@
             /* ETIQUETA QR CODE */
             body.printing-qr .area-exclusiva-qr-print { display: flex !important; justify-content: center !important; align-items: center !important; width: 100% !important; height: 100vh !important; }
         }
-
-        /* ══════════ RESPONSIVIDADE (MOBILE) ══════════ */
+        
+       /* ══════════ RESPONSIVIDADE (MOBILE) ══════════ */
         @media (max-width: 768px) {
             .layout-wrapper { flex-direction: column; overflow-y: auto; }
             .sidebar { width: 100%; height: auto; padding: 15px; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; }
@@ -218,12 +218,15 @@
             .topbar { flex-direction: column; gap: 15px; align-items: flex-start; padding: 20px 15px; }
             .dashboard-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
             
-            .item-row { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 20px; }
-            .item-row > div { width: 100%; display: flex; justify-content: space-between; align-items: center; }
-            .item-row > div:nth-child(1) { width: auto; position: absolute; right: 20px; top: 20px; }
-            .item-row > div:nth-child(2) { display: none; }
-            .item-info { align-items: flex-start !important; max-width: 85%; }
+            /* 🟢 CORREÇÃO DOS CARDS PARA EXIBIR A FOTO E OS BOTÕES ORGANIZADOS */
+            .item-row { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 20px; position: relative; }
+            .item-row > div:nth-child(1) { position: absolute; right: 20px; top: 20px; } /* Checkbox no canto */
+            .item-row > div:nth-child(2) { display: flex !important; margin-bottom: 5px; } /* 🟢 Mostra a Foto/Ícone */
+            .item-info { align-items: flex-start !important; width: 100%; }
             .item-subdados { flex-direction: column; gap: 4px; align-items: flex-start; }
+            
+            /* Organiza os botões de ação na parte de baixo do card */
+            .item-row > div:last-child { width: 100%; justify-content: flex-start !important; margin-top: 10px; border-top: 1px solid var(--border); padding-top: 15px; }
             
             .form-grid { grid-template-columns: 1fr; }
             .form-group-full { grid-column: span 1; }
