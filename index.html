@@ -1177,11 +1177,20 @@
             if (pinSalvo && tempoSalvo) {
                 const horasPassadas = (Date.now() - parseInt(tempoSalvo)) / (1000 * 60 * 60);
                 if (horasPassadas < 12) {
-                    verificarCredenciaisAcesso(pinSalvo);
+                    // Puxa o banco da nuvem primeiro, depois tenta logar para garantir que os perfis já foram carregados
+                    if(dbPerfisAcesso.length <= 1) { // Se só tem o admin padrao, tenta carregar
+                        carregarDadosDaNuvem().then(() => {
+                           verificarCredenciaisAcesso(pinSalvo);
+                        });
+                    } else {
+                         verificarCredenciaisAcesso(pinSalvo);
+                    }
+                    return true;
                 } else {
                     fazerLogout();
                 }
             }
+            return false;
         }
 
         function fazerLogout() {
@@ -1257,10 +1266,7 @@
             selCat.innerHTML = ''; dbCategoriasComplexas.forEach(c => selCat.innerHTML += `<option value="${c.nome}">${c.nome}</option>`);
             selUn.innerHTML = ''; dbUnidades.forEach(u => selUn.innerHTML += `<option value="${u}">${u}</option>`);
             selForn.innerHTML = '<option value="Nenhum">Nenhum Fornecedor</option>'; dbFornecedores.forEach(f => selForn.innerHTML += `<option value="${f.nome}">${f.nome}</option>`);
-            
-            selLoc.innerHTML = '<option value="">(Localização Geral)</option>'; 
-            dbLocais.forEach(l => selLoc.innerHTML += `<option value="${l.nome}">${l.nome}</option>`);
-            
+            selLoc.innerHTML = '<option value="">(Localização Geral)</option>'; dbLocais.forEach(l => selLoc.innerHTML += `<option value="${l.nome}">${l.nome}</option>`);
             const containerCheckboxesConfig = document.getElementById('configPerfilCategoriasChecklist'); containerCheckboxesConfig.innerHTML = `<label class="print-selector-item" style="font-weight: 700;"><input type="checkbox" id="configPerfilSelectAllCatsTrigger" onchange="alternarTodasCategoriasFormPerfil(this)"><span>🌐 [Selecionar Todas as Categorias]</span></label><div class="print-selector-divider"></div>`;
             dbCategoriasComplexas.forEach(c => { containerCheckboxesConfig.innerHTML += `<label class="print-selector-item"><input type="checkbox" value="${c.nome}" class="config-perfil-cat-checkbox-item" onchange="verificarStatusSelecaoMasterPerfil()"><span>${c.nome}</span></label>`; });
         }
@@ -1314,7 +1320,10 @@
 
         function fecharModal(id) { document.getElementById(id).classList.remove('active'); }
         
-        carregarDadosDaNuvem();
+        // Verifica se há sessão antes de forçar o carregamento inicial (Previne a tela de login aparecer atoa)
+        if(!verificarSessaoSalva()) {
+             carregarDadosDaNuvem();
+        }
         
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
