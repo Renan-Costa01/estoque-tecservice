@@ -265,7 +265,10 @@
                     <li class="menu-item" id="menuConfig" onclick="navegar('config')">⚙️ Configurações</li>
                 </ul>
             </div>
-            <button class="theme-toggle-btn" onclick="alternarTemaGlobal()">🌓 Tema Dark/Light</button>
+            <div style="display:flex; gap:10px; margin-top: auto;">
+                <button class="theme-toggle-btn" style="flex:2;" onclick="alternarTemaGlobal()">🌓 Tema</button>
+                <button class="theme-toggle-btn" style="flex:1; background:var(--red-bg); color:var(--red);" onclick="fazerLogout()">Sair</button>
+            </div>
         </nav>
 
         <!-- CONTEÚDO PRINCIPAL -->
@@ -725,10 +728,11 @@
                 dbHistorico = JSON.parse(localStorage.getItem('tec_historico')) || [];
                 dbAuditorias = JSON.parse(localStorage.getItem('tec_auditorias')) || [];
                 dbPerfisAcesso = JSON.parse(localStorage.getItem('tec_perfis')) || [{ nome: "Admin", pin: "1111", master: true }];
-                
-                sincronizarLocaisAntigos();
-                renderEstoque(); popularCombosFormularios(); renderLocais(); renderHistorico(); renderConfiguracoes();
-                return;
+            
+            sincronizarLocaisAntigos();
+            renderEstoque(); popularCombosFormularios(); renderLocais(); renderHistorico(); renderConfiguracoes();
+            verificarSessaoSalva();
+        }
             }
             try {
                 const res = await fetch(GOOGLE_SCRIPT_URL); const data = await res.json();
@@ -1086,13 +1090,59 @@
         }
 
         // --- AUTENTICAÇÃO E NAVEGAÇÃO ---
-        function verificarCredenciaisAcesso() { const pinDigitado = document.getElementById('userAccessPinInput').value.trim(); const perfilEncontrado = dbPerfisAcesso.find(p => p.pin === pinDigitado); if (perfilEncontrado) { perfilAutenticadoGlobal = perfilEncontrado; document.getElementById('loginGatewayScreen').style.display = 'none'; document.getElementById('userPerfilActiveLabel').textContent = perfilEncontrado.nome; aplicarFiltrosEPolíticasDeSeguranca(); iniciarTempoReal(); } else { const err = document.getElementById('loginErrorMessage'); err.style.display = 'block'; setTimeout(() => { err.style.display = 'none'; }, 3000); } }
-        function aplicarFiltrosEPolíticasDeSeguranca() {
-            if (!perfilAutenticadoGlobal) return;
-            const menuHist = document.getElementById('menuHistorico'); const menuConf = document.getElementById('menuConfig'); const menuLoc = document.getElementById('menuLocais'); const btnNovo = document.getElementById('btnActionNovoAtivoTop'); const dashFin = document.getElementById('dashboardFinanceiroGridContainer');
-            if (perfilAutenticadoGlobal.master) { menuHist.style.display = 'flex'; menuConf.style.display = 'flex'; menuLoc.style.display = 'flex'; btnNovo.style.display = 'inline-flex'; dashFin.style.display = 'grid'; filtroFiltroEstoque = 'todos'; } else { menuHist.style.display = 'none'; menuConf.style.display = 'none'; menuLoc.style.display = 'none'; dashFin.style.display = 'none'; btnNovo.style.display = perfilAutenticadoGlobal.permissoes && perfilAutenticadoGlobal.permissoes.criar ? 'inline-flex' : 'none'; if (perfilAutenticadoGlobal.categorias && perfilAutenticadoGlobal.categorias.length > 0) filtroFiltroEstoque = perfilAutenticadoGlobal.categorias[0]; else filtroFiltroEstoque = 'nenhum'; }
-            renderEstoque();
+        function verificarCredenciaisAcesso(pinAutomatico = null) { 
+            // Pega o PIN automático da memória, ou o que o usuário digitou na tela
+            const pinDigitado = pinAutomatico || document.getElementById('userAccessPinInput').value.trim(); 
+            const perfilEncontrado = dbPerfisAcesso.find(p => p.pin === pinDigitado); 
+            
+            if (perfilEncontrado) { 
+                perfilAutenticadoGlobal = perfilEncontrado; 
+                document.getElementById('loginGatewayScreen').style.display = 'none'; 
+                document.getElementById('userPerfilActiveLabel').textContent = perfilEncontrado.nome; 
+                
+                // 🟢 SALVA O LOGIN NA MEMÓRIA DO CELULAR
+                if (!pinAutomatico) {
+                    localStorage.setItem('tec_session_pin', pinDigitado);
+                    localStorage.setItem('tec_session_time', Date.now().toString());
+                }
+
+                aplicarFiltrosEPolíticasDeSeguranca(); 
+                iniciarTempoReal(); 
+            } else { 
+                // Só mostra erro se for digitação manual
+                if (!pinAutomatico) {
+                    const err = document.getElementById('loginErrorMessage'); 
+                    err.style.display = 'block'; 
+                    setTimeout(() => { err.style.display = 'none'; }, 3000); 
+                }
+            } 
         }
+
+        function verificarSessaoSalva() {
+            const pinSalvo = localStorage.getItem('tec_session_pin');
+            const tempoSalvo = localStorage.getItem('tec_session_time');
+            
+            if (pinSalvo && tempoSalvo) {
+                // Calcula quantas horas se passaram desde o login
+                const horasPassadas = (Date.now() - parseInt(tempoSalvo)) / (1000 * 60 * 60);
+                
+                // Se faz menos de 12 horas, loga direto!
+                if (horasPassadas < 12) {
+                    verificarCredenciaisAcesso(pinSalvo);
+                } else {
+                    // Passou de 12h, a sessão expira e limpa os dados
+                    fazerLogout();
+                }
+            }
+        }
+
+        function fazerLogout() {
+            localStorage.removeItem('tec_session_pin');
+            localStorage.removeItem('tec_session_time');
+            location.reload(); // Recarrega a página de volta pro cadeado
+        }
+
+        
         function alternarTemaGlobal() { const dark = document.body.getAttribute('data-theme') === 'dark'; document.body.setAttribute('data-theme', dark ? 'light' : 'dark'); if(filtroFiltroEstoque === 'todos' || filtroFiltroEstoque === 'criticos') document.body.style.setProperty('--dinamica-categoria', !dark ? 'rgba(0, 67, 156, 0.25)' : 'rgba(0, 67, 156, 0.05)'); else { const objetoCat = dbCategoriasComplexas.find(c => c.nome === filtroFiltroEstoque); if(objetoCat) document.body.style.setProperty('--dinamica-categoria', objetoCat.cor + (!dark ? '40' : '15')); } }
         function navegar(alvo) { document.querySelectorAll('.view-pane').forEach(el => el.classList.remove('active')); document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active')); document.getElementById('topbarActionsArea').style.display = alvo === 'estoque' ? 'flex' : 'none'; if(alvo === 'estoque') { document.getElementById('paneEstoque').classList.add('active'); document.getElementById('menuEstoque').classList.add('active'); renderEstoque(); } else if (alvo === 'locais') { document.getElementById('paneLocais').classList.add('active'); document.getElementById('menuLocais').classList.add('active'); renderLocais(); } else if (alvo === 'historico') { document.getElementById('paneHistorico').classList.add('active'); document.getElementById('menuHistorico').classList.add('active'); renderHistorico(); } else if (alvo === 'config') { document.getElementById('paneConfig').classList.add('active'); document.getElementById('menuConfig').classList.add('active'); renderConfiguracoes(); } }
 
