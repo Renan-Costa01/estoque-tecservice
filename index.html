@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TecCheck • TECSERVICE</title>
+    <title>TecCheck Enterprise • TECSERVICE</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -51,7 +51,6 @@
         .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         .topbar { padding: 24px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: rgba(12, 18, 38, 0.02); backdrop-filter: blur(20px); }
         .page-title h2 { font-size: 22px; font-weight: 800; font-family: 'DM Serif Display', serif; }
-        .page-title p { font-size: 13px; color: var(--ink-muted); margin-top: 2px; }
         .topbar-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
         .view-pane { flex: 1; padding: 40px; overflow-y: auto; display: none; }
         .view-pane.active { display: block; }
@@ -237,11 +236,13 @@
 </head>
 <body data-theme="light">
 
+    <!-- BARRA DE STATUS DA AUDITORIA -->
     <div class="audit-status-bar" id="auditStatusBar">
         <span>⚠️ AUDITORIA EM ANDAMENTO</span>
         <button class="btn btn-sucesso" style="padding:8px 15px;" onclick="finalizarRelatorioAuditoria()">CONCLUIR E SALVAR</button>
     </div>
 
+    <!-- GATEWAY DE LOGIN -->
     <div class="login-overlay" id="loginGatewayScreen">
         <div class="login-box">
             <h2>TECSERVICE Enterprise</h2>
@@ -253,6 +254,7 @@
     </div>
 
     <div class="layout-wrapper">
+        <!-- SIDEBAR -->
         <nav class="sidebar area-normal-sistema">
             <div>
                 <div class="brand">TECSERVICE</div>
@@ -270,19 +272,21 @@
             </div>
         </nav>
 
+        <!-- CONTEÚDO PRINCIPAL -->
         <main class="main-content area-normal-sistema">
             <header class="topbar">
                 <div class="page-title">
                     <h2 id="txtTopTitulo">Estoque Central</h2>
                 </div>
                 <div class="topbar-actions" id="topbarActionsArea">
-                    <button class="btn btn-secundario" onclick="abrirModalIntegracao()">🔄 Integração</button>
+                    <button class="btn btn-secundario" onclick="abrirModalIntegracao()">🔄 Integração (ERP/Excel)</button>
                     <button class="btn btn-sucesso" onclick="iniciarRotaAuditoria()">🧭 Iniciar Auditoria</button>
                     <button class="btn btn-secundario" onclick="abrirModalPrint()">🖨️ Imprimir</button>
                     <button class="btn btn-primario" id="btnActionNovoAtivoTop" onclick="abrirModalItem()">➕ Novo Ativo</button>
                 </div>
             </header>
 
+            <!-- ABA 1: ESTOQUE -->
             <section id="paneEstoque" class="view-pane active">
                 <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Buscar por código, nome, marca ou caixa..." oninput="renderEstoque()">
                 
@@ -297,6 +301,7 @@
                 <div class="produtos-lista" id="renderEstoqueRow"></div>
             </section>
 
+            <!-- ABA 2: LOCAIS / CAIXAS -->
             <section id="paneLocais" class="view-pane">
                 <div style="display:flex; justify-content:space-between; margin-bottom:20px; align-items:center; flex-wrap:wrap; gap:10px;">
                     <h2 style="font-size:20px;">Gestão de Caixas e Prateleiras</h2>
@@ -308,6 +313,7 @@
                 <div id="renderLocaisGrid" class="dashboard-grid"></div>
             </section>
 
+            <!-- ABA 3: HISTÓRICO E LOGS DE AUDITORIA -->
             <section id="paneHistorico" class="view-pane">
                 <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
                     <h2>Histórico e Auditorias</h2>
@@ -321,6 +327,7 @@
                 </div>
             </section>
 
+            <!-- ABA 4: CONFIGURAÇÕES -->
             <section id="paneConfig" class="view-pane">
                 <div class="config-section">
                     <div class="config-box" style="grid-column: span 2;">
@@ -372,8 +379,12 @@
         </main>
     </div>
 
+    <!-- BOTÃO FLUTUANTE DA CÂMERA -->
     <div class="floating-scan-btn area-normal-sistema" onclick="abrirScanner()">📷</div>
 
+    <!-- 🟢 MODAIS DA APLICAÇÃO 🟢 -->
+
+    <!-- INTEGRAÇÃO / EXPORT / IMPORT -->
     <div class="modal-overlay" id="modalIntegracao">
         <div class="modal-content">
             <div class="modal-header">
@@ -396,6 +407,7 @@
         </div>
     </div>
 
+    <!-- ROTA DE AUDITORIA INTELIGENTE -->
     <div class="modal-overlay" id="modalRotaAuditoria">
         <div class="modal-content">
             <div class="modal-header">
@@ -417,6 +429,7 @@
         </div>
     </div>
 
+    <!-- VISUALIZAR LOG DE AUDITORIA -->
     <div class="modal-overlay" id="modalVerAuditoriaLog">
         <div class="modal-content" style="max-width: 700px;">
             <div class="modal-header">
@@ -428,6 +441,7 @@
         </div>
     </div>
 
+    <!-- SCANNER DE CÂMERA -->
     <div class="modal-overlay" id="modalScanner">
         <div class="modal-content">
             <div class="modal-header">
@@ -440,6 +454,7 @@
         </div>
     </div>
 
+    <!-- GERAR ETIQUETA QR -->
     <div class="modal-overlay" id="modalGeradorQR">
         <div class="modal-content">
             <div class="modal-header">
@@ -472,6 +487,7 @@
         </div>
     </div>
 
+    <!-- AUDITORIA RÁPIDA (Scanner Livre ou Botão Direto) -->
     <div class="modal-overlay" id="modalAuditoriaRapida">
         <div class="modal-content">
             <div class="modal-header">
@@ -484,6 +500,7 @@
         </div>
     </div>
 
+    <!-- CRIAR NOVO LOCAL/CAIXA -->
     <div class="modal-overlay" id="modalLocalOverlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -504,6 +521,7 @@
         </div>
     </div>
 
+    <!-- CADASTRO / EDIÇÃO DE ATIVO -->
     <div class="modal-overlay" id="modalItemOverlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -598,6 +616,7 @@
         </div>
     </div>
 
+    <!-- REGISTRAR COMPRA -->
     <div class="modal-overlay" id="modalLancamentoOverlay">
         <div class="modal-content" style="max-width: 440px;">
             <div class="modal-header">
@@ -614,6 +633,7 @@
         </div>
     </div>
 
+    <!-- IMPRESSÃO DINÂMICA -->
     <div class="modal-overlay" id="modalPrintOverlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -662,6 +682,7 @@
         </div>
     </div>
 
+    <!-- ÁREAS EXCLUSIVAS PARA IMPRESSÃO -->
     <div class="area-exclusiva-impressao" id="printSystemArea">
         <div class="print-container">
             <div class="print-header">
@@ -694,7 +715,7 @@
 
         let rotaLocaisAProcessar = []; let rotaIndiceAtual = 0; let logAuditoriaSessao = [];
 
-        // 🟢 --- ARQUITETURA DE INICIALIZAÇÃO BLINDADA --- 🟢
+        // 🟢 --- ARQUITETURA DE INICIALIZAÇÃO E BLINDAGEM DE DADOS --- 🟢
         function carregarBancoLocal() {
             dbItems = JSON.parse(localStorage.getItem('tec_items')) || [];
             dbLocais = JSON.parse(localStorage.getItem('tec_locais')) || [];
@@ -709,7 +730,10 @@
         }
 
         function atualizarInterfaceCompleta() {
-            if (!perfilAutenticadoGlobal) return;
+            if (!perfilAutenticadoGlobal) {
+                renderEstoque(); // Garante que algo seja desenhado
+                return;
+            }
             aplicarFiltrosEPolíticasDeSeguranca(); 
             popularCombosFormularios();
             renderLocais();
@@ -731,22 +755,29 @@
                     const res = await fetch(GOOGLE_SCRIPT_URL);
                     const data = await res.json();
                     
-                    if (data.items) {
-                        dbItems = data.items;
-                        dbLocais = data.locais || [];
-                        dbCategoriasComplexas = data.categories || [{nome: "Geral", cor:"#00439c"}];
-                        dbUnidades = data.units || ["un"];
-                        dbFornecedores = data.suppliers || [];
-                        dbHistorico = data.history || [];
-                        dbAuditorias = data.auditorias || [];
-                        dbPerfisAcesso = data.profiles || [{ nome: "Admin", pin: "1111", master: true }];
+                    if (data && Array.isArray(data.items)) {
                         
-                        sincronizarLocaisAntigos();
-                        salvarDadosNaNuvem(); 
-                        
-                        // Se o usuário está logado e usando o app, re-desenha a tela com os dados novos da nuvem
-                        if (perfilAutenticadoGlobal) {
-                            atualizarInterfaceCompleta();
+                        // 🟢 REGRA ANTI-APAGÃO DE DADOS NO 1º USO DO GOOGLE SHEETS 🟢
+                        // Se a nuvem estiver vazia, mas o celular tiver dados, O CELULAR VENCE E MANDA PRA NUVEM!
+                        if (data.items.length === 0 && dbItems.length > 0) {
+                            console.log("Proteção Ativada: Nuvem vazia ignorada. Empurrando dados do celular para a nuvem...");
+                            salvarDadosNaNuvem();
+                        } else {
+                            dbItems = data.items;
+                            dbLocais = data.locais || [];
+                            dbCategoriasComplexas = data.categories || [{nome: "Geral", cor:"#00439c"}];
+                            dbUnidades = data.units || ["un"];
+                            dbFornecedores = data.suppliers || [];
+                            dbHistorico = data.history || [];
+                            dbAuditorias = data.auditorias || [];
+                            dbPerfisAcesso = (data.profiles && data.profiles.length > 0) ? data.profiles : [{ nome: "ADMINISTRATIVO", pin: "1111", master: true, categorias:[], permissoes:{criar:true, editar:true, deletar:true} }];
+                            
+                            sincronizarLocaisAntigos();
+                            salvarDadosNaNuvem(); 
+                            
+                            if (perfilAutenticadoGlobal) {
+                                atualizarInterfaceCompleta();
+                            }
                         }
                     }
                 } catch (e) {
@@ -770,7 +801,6 @@
             if(locaisAlterados && GOOGLE_SCRIPT_URL !== "SUA_URL_DO_GOOGLE_SCRIPT_AQUI") salvarDadosNaNuvem();
         }
 
-        // 🟢 TRY/CATCH DE SEGURANÇA PARA AVISAR SE A MEMÓRIA DO CELULAR ENCHER 🟢
         async function salvarDadosNaNuvem() {
             try {
                 localStorage.setItem('tec_items', JSON.stringify(dbItems));
@@ -796,10 +826,15 @@
             if (GOOGLE_SCRIPT_URL === "SUA_URL_DO_GOOGLE_SCRIPT_AQUI") return;
             try {
                 const res = await fetch(GOOGLE_SCRIPT_URL); const data = await res.json();
-                if (data && data.items && JSON.stringify(dbItems) !== JSON.stringify(data.items)) {
-                    dbItems = data.items; dbLocais = data.locais || dbLocais; dbAuditorias = data.auditorias || dbAuditorias;
-                    sincronizarLocaisAntigos();
-                    atualizarInterfaceCompleta();
+                if (data && Array.isArray(data.items)) {
+                    // Prevenção de WIPE repentino
+                    if (data.items.length === 0 && dbItems.length > 0) return;
+                    
+                    if (JSON.stringify(dbItems) !== JSON.stringify(data.items)) {
+                        dbItems = data.items; dbLocais = data.locais || dbLocais; dbAuditorias = data.auditorias || dbAuditorias;
+                        sincronizarLocaisAntigos();
+                        atualizarInterfaceCompleta();
+                    }
                 }
             } catch (e) {}
         }
@@ -871,7 +906,7 @@
         function salvarPassoRotaAuditoria() {
             document.querySelectorAll('.auditoria-input-rota').forEach(input => {
                 const idItem = input.getAttribute('data-id'); const oldVal = parseInt(input.getAttribute('data-old')); const novaQtd = parseInt(input.value);
-                if (oldVal !== novaQtd) { const itemRef = dbItems.find(i => i.id === idItem); if(itemRef) { itemRef.atual = novaQtd; logAuditoriaSessao.push({ nome: itemRef.nome, de: oldVal, para: novaQtd, local: itemRef.localizacao }); } }
+                if (oldVal !== novaQtd) { const itemRef = dbItems.find(i => String(i.id).trim() === String(idItem).trim()); if(itemRef) { itemRef.atual = novaQtd; logAuditoriaSessao.push({ nome: itemRef.nome, de: oldVal, para: novaQtd, local: itemRef.localizacao }); } }
             });
             rotaIndiceAtual++; carregarPassoAuditoria();
         }
@@ -898,7 +933,7 @@
             });
         }
         function verLogAuditoria(id) {
-            const aud = dbAuditorias.find(a => a.id === id); if(!aud) return;
+            const aud = dbAuditorias.find(a => String(a.id) === String(id)); if(!aud) return;
             document.getElementById('modalVerAuditoriaLog').classList.add('active');
             let html = `<table class="data-table"><thead><tr><th>Local</th><th>Item</th><th>De</th><th>Para</th></tr></thead><tbody>`;
             aud.log.forEach(l => { html += `<tr><td>${l.local}</td><td><b>${l.nome}</b></td><td>${l.de}</td><td style="color:${l.para > l.de ? 'var(--green)' : 'var(--red)'}; font-weight:bold;">${l.para}</td></tr>`; });
@@ -1056,7 +1091,7 @@
         }
         
         function auditarCaixaDireto(idLocal) {
-            const loc = dbLocais.find(l => l.id == idLocal);
+            const loc = dbLocais.find(l => String(l.id) === String(idLocal));
             if(!loc) return;
             const itensDaCaixa = dbItems.filter(i => i.localizacao === loc.nome);
             if(itensDaCaixa.length === 0) return alert("Esta caixa está vazia no sistema. Nenhum item para auditar.");
@@ -1077,19 +1112,19 @@
         }
         function deletarLocal(id) { 
             if(confirm("Confirmar exclusão desta Caixa/Prateleira? (Os itens não serão apagados, apenas ficarão sem local).")) { 
-                const loc = dbLocais.find(l => l.id == id); if(loc) { dbItems.forEach(i => { if(i.localizacao === loc.nome) i.localizacao = ''; }); } 
-                dbLocais = dbLocais.filter(l => l.id != id); atualizarInterfaceCompleta(); salvarDadosNaNuvem(); 
+                const loc = dbLocais.find(l => String(l.id) === String(id)); if(loc) { dbItems.forEach(i => { if(i.localizacao === loc.nome) i.localizacao = ''; }); } 
+                dbLocais = dbLocais.filter(l => String(l.id) !== String(id)); atualizarInterfaceCompleta(); salvarDadosNaNuvem(); 
             } 
         }
 
         // --- GERAÇÃO DE QR CODE ---
         function abrirGeradorQR(idItem) {
-            const item = dbItems.find(i => i.id == idItem); if(!item) return;
+            const item = dbItems.find(i => String(i.id) === String(idItem)); if(!item) return;
             document.getElementById('modalGeradorQR').classList.add('active'); document.getElementById('lblQrNome').textContent = item.nome; document.getElementById('lblQrCod').textContent = "Cód: " + (item.codigo || 'S/C'); document.getElementById('lblQrLocal').textContent = "Local: " + (item.localizacao || 'Geral');
             gerarCodigoBase(item.id.toString());
         }
         function abrirGeradorQRLocais(idLocal) {
-            const loc = dbLocais.find(l => l.id == idLocal); if(!loc) return;
+            const loc = dbLocais.find(l => String(l.id) === String(idLocal)); if(!loc) return;
             document.getElementById('modalGeradorQR').classList.add('active'); document.getElementById('lblQrNome').textContent = loc.nome; document.getElementById('lblQrCod').textContent = "TIPO: " + loc.tipo; document.getElementById('lblQrLocal').textContent = "ID LOCAL";
             gerarCodigoBase(loc.id.toString());
         }
@@ -1133,12 +1168,12 @@
         }
         function salvarAuditoria() {
             let alterados = 0; logAuditoriaSessao = [];
-            document.querySelectorAll('.auditoria-input').forEach(input => { const idItem = input.getAttribute('data-id'); const novaQtd = parseInt(input.value); const itemRef = dbItems.find(i => i.id == idItem); if (itemRef && itemRef.atual !== novaQtd) { logAuditoriaSessao.push({ nome: itemRef.nome, de: itemRef.atual, para: novaQtd, local: itemRef.localizacao }); itemRef.atual = novaQtd; alterados++; } });
+            document.querySelectorAll('.auditoria-input').forEach(input => { const idItem = input.getAttribute('data-id'); const novaQtd = parseInt(input.value); const itemRef = dbItems.find(i => String(i.id) === String(idItem)); if (itemRef && itemRef.atual !== novaQtd) { logAuditoriaSessao.push({ nome: itemRef.nome, de: itemRef.atual, para: novaQtd, local: itemRef.localizacao }); itemRef.atual = novaQtd; alterados++; } });
             fecharModal('modalAuditoriaRapida'); atualizarInterfaceCompleta();
             if(!emAuditoria) { if(alterados > 0) { dbAuditorias.push({ id: Date.now(), data: new Date().toISOString(), log: logAuditoriaSessao }); salvarDadosNaNuvem(); alert(`✅ Estoque atualizado! (${alterados} itens alterados)`); } }
         }
 
-        // --- 🟢 AUTENTICAÇÃO E INICIALIZAÇÃO BLINDADAS ---
+        // --- 🟢 AUTENTICAÇÃO E INICIALIZAÇÃO ---
         function verificarCredenciaisAcesso(pinAutomatico = null) { 
             const isManual = (typeof pinAutomatico !== 'string');
             const pinDigitado = isManual ? document.getElementById('userAccessPinInput').value.trim() : pinAutomatico; 
@@ -1155,11 +1190,11 @@
                     localStorage.setItem('tec_session_time', Date.now().toString());
                 }
 
-                // Atualiza a tela com os dados preenchidos
                 atualizarInterfaceCompleta();
                 
-                // Força a tela a mudar para Estoque Central
-                navegar('estoque'); 
+                if(isManual || !document.querySelector('.view-pane.active')) {
+                    navegar('estoque'); 
+                }
                 
                 if(loopSincronismo) clearInterval(loopSincronismo);
                 iniciarTempoReal(); 
@@ -1190,6 +1225,7 @@
                 }
             }
             
+            // Garante que pelo menos o layout do fundo (caso a pessoa não esteja logada) não trave a memória
             popularCombosFormularios(); 
             renderLocais(); 
             renderHistorico(); 
@@ -1203,9 +1239,12 @@
         }
 
         function aplicarFiltrosEPolíticasDeSeguranca() {
-            if (!perfilAutenticadoGlobal) return;
+            if (!perfilAutenticadoGlobal) {
+                renderEstoque();
+                return;
+            }
             const menuHist = document.getElementById('menuHistorico'); const menuConf = document.getElementById('menuConfig'); const menuLoc = document.getElementById('menuLocais'); const btnNovo = document.getElementById('btnActionNovoAtivoTop'); const dashFin = document.getElementById('dashboardFinanceiroGridContainer');
-            if (perfilAutenticadoGlobal.master) { menuHist.style.display = 'flex'; menuConf.style.display = 'flex'; menuLoc.style.display = 'flex'; btnNovo.style.display = 'inline-flex'; dashFin.style.display = 'grid'; filtroFiltroEstoque = 'todos'; } else { menuHist.style.display = 'none'; menuConf.style.display = 'none'; menuLoc.style.display = 'none'; dashFin.style.display = 'none'; btnNovo.style.display = perfilAutenticadoGlobal.permissoes && perfilAutenticadoGlobal.permissoes.criar ? 'inline-flex' : 'none'; if (perfilAutenticadoGlobal.categorias && perfilAutenticadoGlobal.categorias.length > 0) filtroFiltroEstoque = perfilAutenticadoGlobal.categorias[0]; else filtroFiltroEstoque = 'nenhum'; }
+            if (perfilAutenticadoGlobal.master) { menuHist.style.display = 'flex'; menuConf.style.display = 'flex'; menuLoc.style.display = 'flex'; btnNovo.style.display = 'inline-flex'; dashFin ? dashFin.style.display = 'grid' : ''; filtroFiltroEstoque = 'todos'; } else { menuHist.style.display = 'none'; menuConf.style.display = 'none'; menuLoc.style.display = 'none'; dashFin ? dashFin.style.display = 'none' : ''; btnNovo.style.display = perfilAutenticadoGlobal.permissoes && perfilAutenticadoGlobal.permissoes.criar ? 'inline-flex' : 'none'; if (perfilAutenticadoGlobal.categorias && perfilAutenticadoGlobal.categorias.length > 0) filtroFiltroEstoque = perfilAutenticadoGlobal.categorias[0]; else filtroFiltroEstoque = 'nenhum'; }
             renderEstoque();
         }
         
@@ -1223,6 +1262,9 @@
         }
 
         function renderEstoque() {
+            // Se falhou ao buscar o ID, força não bugar
+            dbItems.forEach(item => { if (!item.id) item.id = "ATV-REC-" + Math.random().toString(36).substr(2, 9); });
+
             const termoBusca = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase() : ''; 
             const containerFiltros = document.getElementById('filtrosContainer'); containerFiltros.innerHTML = '';
             if (perfilAutenticadoGlobal && !perfilAutenticadoGlobal.master) {
@@ -1253,24 +1295,34 @@
                 card.innerHTML = `<div><div class="chk-box ${item.checked ? 'checked' : ''}" onclick="alternarCheckboxItem('${item.id}')"></div></div><div class="auto-icon-box" style="color:${configuracaoCategoriaCor}">${midiaRender}</div><div class="item-info"><h4>${item.nome}</h4><div class="item-subdados"><span>Cód: <b>${item.codigo || 'S/C'}</b></span><span>Local: <b style="color:var(--accent)">${item.localizacao || 'Geral'}</b></span></div></div><div>${item.categoria || '-'}</div><div class="item-meta"><label>Estoque</label><span>${item.atual}</span></div><div class="item-meta"><label>Preço</label><span>R$ ${(item.preco||0).toFixed(2)}</span></div><div style="display:flex; justify-content:flex-end; gap:8px;">${acoesHtml}</div>`;
                 rowBox.appendChild(card);
             });
-            document.getElementById('dashPatrimonio').textContent = `R$ ${valPatrimonio.toFixed(2)}`; document.getElementById('dashBudget').textContent = `R$ ${valBudget.toFixed(2)}`; document.getElementById('dashTotal').textContent = dbItems.length; document.getElementById('dashCriticos').textContent = countCriticos;
+            document.getElementById('dashPatrimonio').textContent = `R$ ${valPatrimonio.toFixed(2)}`; document.getElementById('dashBudget') ? document.getElementById('dashBudget').textContent = `R$ ${valBudget.toFixed(2)}` : ''; document.getElementById('dashTotal').textContent = dbItems.length; document.getElementById('dashCriticos').textContent = countCriticos;
             const dashLoc = document.getElementById('dashLocais'); if(dashLoc) dashLoc.textContent = dbLocais.length;
         }
 
-        function alternarCheckboxItem(id) { const item = dbItems.find(m => m.id == id); if(item) { item.checked = !item.checked; atualizarInterfaceCompleta(); salvarDadosNaNuvem(); } }
+        function alternarCheckboxItem(id) { const item = dbItems.find(m => String(m.id) === String(id)); if(item) { item.checked = !item.checked; atualizarInterfaceCompleta(); salvarDadosNaNuvem(); } }
         function filtrarPainelEstoque(alvo) { filtroFiltroEstoque = alvo; renderEstoque(); }
 
         function abrirModalItem() { document.getElementById('modalItemOverlay').classList.add('active'); popularCombosFormularios(); document.getElementById('formId').value = ''; document.getElementById('formCodigo').value = ''; document.getElementById('formMarca').value = ''; document.getElementById('formNome').value = ''; document.getElementById('formLocalizacao').value = ''; document.getElementById('formPreco').value = ''; document.getElementById('formAtual').value = ''; document.getElementById('formMinimo').value = ''; document.getElementById('formFotoBase64').value = ''; }
-        function editarItem(id) { const item = dbItems.find(m => m.id == id); if(item) { abrirModalItem(); document.getElementById('formId').value = item.id; document.getElementById('formCodigo').value = item.codigo || ''; document.getElementById('formMarca').value = item.marca || ''; document.getElementById('formNome').value = item.nome; document.getElementById('formLocalizacao').value = item.localizacao || ''; document.getElementById('formCategoria').value = item.categoria; document.getElementById('formUnidade').value = item.unidade; document.getElementById('formFornecedor').value = item.fornecedor || 'Nenhum'; document.getElementById('formPreco').value = item.preco; document.getElementById('formAtual').value = item.atual; document.getElementById('formMinimo').value = item.minimo; document.getElementById('formFotoBase64').value = item.foto || ''; } }
+        
+        function editarItem(id) { const item = dbItems.find(m => String(m.id) === String(id)); if(item) { abrirModalItem(); document.getElementById('formId').value = item.id; document.getElementById('formCodigo').value = item.codigo || ''; document.getElementById('formMarca').value = item.marca || ''; document.getElementById('formNome').value = item.nome; document.getElementById('formLocalizacao').value = item.localizacao || ''; document.getElementById('formCategoria').value = item.categoria; document.getElementById('formUnidade').value = item.unidade; document.getElementById('formFornecedor').value = item.fornecedor || 'Nenhum'; document.getElementById('formPreco').value = item.preco; document.getElementById('formAtual').value = item.atual; document.getElementById('formMinimo').value = item.minimo; document.getElementById('formFotoBase64').value = item.foto || ''; } }
+        
         function salvarItem() {
             const id = document.getElementById('formId').value; const codigo = document.getElementById('formCodigo').value.trim(); const colMarca = document.getElementById('formMarca').value.trim(); const nome = document.getElementById('formNome').value.trim(); const localizacao = document.getElementById('formLocalizacao').value.trim(); const categoria = document.getElementById('formCategoria').value; const unidade = document.getElementById('formUnidade').value; const forn = document.getElementById('formFornecedor').value; const preco = parseFloat(document.getElementById('formPreco').value) || 0; const atual = parseInt(document.getElementById('formAtual').value) || 0; const minimo = parseInt(document.getElementById('formMinimo').value) || 0; const foto = document.getElementById('formFotoBase64').value;
             if(!nome) return alert("Nome inválido!");
-            if(id) { const item = dbItems.find(m => m.id == id); if(item) { Object.assign(item, { codigo, marca: colMarca, nome, localizacao, categoria, unidade, fornecedor: forn, preco, atual, minimo }); if(foto) item.foto = foto; } } else { dbItems.push({ id: "ATV-" + Date.now().toString(), codigo, marca: colMarca, nome, localizacao, categoria, unidade, fornecedor: forn, preco, atual, minimo, checked: false, foto }); }
+            if(id) { const item = dbItems.find(m => String(m.id) === String(id)); if(item) { Object.assign(item, { codigo, marca: colMarca, nome, localizacao, categoria, unidade, fornecedor: forn, preco, atual, minimo }); if(foto) item.foto = foto; } } else { dbItems.push({ id: "ATV-" + Date.now().toString(), codigo, marca: colMarca, nome, localizacao, categoria, unidade, fornecedor: forn, preco, atual, minimo, checked: false, foto }); }
             fecharModal('modalItemOverlay'); atualizarInterfaceCompleta(); salvarDadosNaNuvem();
         }
-        function deletarItem(id) { if(confirm("Confirmar exclusão?")) { dbItems = dbItems.filter(m => m.id != id); atualizarInterfaceCompleta(); salvarDadosNaNuvem(); } }
         
-        // 🟢 COMPRESSOR DE IMAGENS AUTOMÁTICO (Impede o erro de falta de memória)
+        // 🟢 REGRA DE EXCLUSÃO ESTABELECIDA 🟢
+        function deletarItem(id) { 
+            if(confirm("Confirmar exclusão definitiva deste ativo?")) { 
+                dbItems = dbItems.filter(m => String(m.id).trim() !== String(id).trim()); 
+                atualizarInterfaceCompleta(); 
+                salvarDadosNaNuvem(); 
+            } 
+        }
+        
+        // 🟢 COMPRESSOR DE IMAGENS AUTOMÁTICO 
         function processarImagemLocal(input) { 
             const arquivo = input.files[0]; 
             if (!arquivo) return; 
@@ -1283,7 +1335,6 @@
                     let width = img.width;
                     let height = img.height;
                     
-                    // Se a imagem for enorme (câmera de celular), encolhe ela para no máximo 400px
                     if (width > 400) {
                         height = Math.round(height * (400 / width));
                         width = 400;
@@ -1294,7 +1345,6 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
                     
-                    // Transforma em arquivo JPG levinho
                     const base64Otimizado = canvas.toDataURL('image/jpeg', 0.6); 
                     
                     document.getElementById('formFotoBase64').value = base64Otimizado; 
