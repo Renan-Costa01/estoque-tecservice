@@ -279,7 +279,7 @@
                     <h2 id="txtTopTitulo">Estoque Central</h2>
                 </div>
                 <div class="topbar-actions" id="topbarActionsArea">
-                    <button class="btn btn-secundario" onclick="abrirModalIntegracao()">🔄 Integração (ERP/Excel)</button>
+                    <button class="btn btn-secundario" onclick="abrirModalIntegracao()">🔄 Backups / Excel</button>
                     <button class="btn btn-sucesso" onclick="iniciarRotaAuditoria()">🧭 Iniciar Auditoria</button>
                     <button class="btn btn-secundario" onclick="abrirModalPrint()">🖨️ Imprimir</button>
                     <button class="btn btn-primario" id="btnActionNovoAtivoTop" onclick="abrirModalItem()">➕ Novo Ativo</button>
@@ -388,21 +388,31 @@
     <div class="modal-overlay" id="modalIntegracao">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Integração de Dados (ERP/Excel)</h3>
+                <h3>Integração e Backups</h3>
                 <button class="btn-icon" onclick="fecharModal('modalIntegracao')">✕</button>
             </div>
+            
             <div style="background:var(--card2); padding:15px; border-radius:10px; border:1px solid var(--border); margin-bottom:20px;">
-                <h4 style="margin-bottom:10px; font-size:14px; color:var(--accent);">📤 Exportar Estoque</h4>
-                <div style="display:flex; gap:10px;">
-                    <button class="btn btn-primario" style="flex:1;" onclick="exportarEstoqueCSV()">📄 Baixar CSV</button>
-                    <button class="btn btn-secundario" style="flex:1;" onclick="exportarEstoqueXML()">⚙️ Baixar XML</button>
+                <h4 style="margin-bottom:10px; font-size:14px; color:var(--accent);">📤 Baixar Estoque</h4>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="btn btn-primario" style="flex:1;" onclick="exportarEstoqueCSV()">📄 CSV (Excel)</button>
+                    <button class="btn btn-secundario" style="flex:1;" onclick="exportarEstoqueXML()">⚙️ XML</button>
+                    <button class="btn btn-sucesso" style="flex:1;" onclick="exportarBackupJSON()">📦 Backup Completo</button>
                 </div>
             </div>
+
             <div style="background:var(--card2); padding:15px; border-radius:10px; border:1px dashed var(--accent);">
-                <h4 style="margin-bottom:10px; font-size:14px; color:var(--accent);">📥 Importação em Massa</h4>
-                <p style="font-size:12px; color:var(--ink-muted); margin-bottom:15px;">A ordem das colunas do seu Excel deve ser:<br><b>CÓDIGO | NOME | LOCALIZAÇÃO/CAIXA | ESTOQUE ATUAL | PREÇO CUSTO</b></p>
-                <textarea id="importDataTexto" rows="6" placeholder="Cole aqui os dados copiados da planilha..." style="width:100%; border:1px solid var(--border); padding:10px; border-radius:8px; outline:none;"></textarea>
-                <button class="btn btn-primario" style="width:100%; margin-top:10px;" onclick="processarImportacaoExcel()">Processar Itens</button>
+                <h4 style="margin-bottom:10px; font-size:14px; color:var(--accent);">📥 Importar ou Restaurar Backup</h4>
+                <p style="font-size:12px; color:var(--ink-muted); margin-bottom:15px;">Faça o upload do arquivo baixado (Excel CSV, XML ou o arquivo .json do Backup Completo).</p>
+                
+                <input type="file" id="uploadBackupInput" accept=".csv, .xml, .json" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--card); margin-bottom:15px;">
+                
+                <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:bold; color:var(--red); margin-bottom:15px; cursor:pointer;">
+                    <input type="checkbox" id="chkSubstituirEstoque" style="width:16px; height:16px;">
+                    ⚠️ APAGAR estoque atual e substituir por este arquivo (Restauração)
+                </label>
+                
+                <button class="btn btn-primario" style="width:100%;" onclick="processarUploadArquivo()">Processar Arquivo</button>
             </div>
         </div>
     </div>
@@ -701,7 +711,6 @@
         // 🚨 CONFIGURAÇÃO DE NUVEM 🚨
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyuFfLF2B8BiT6m7jKDBce2WQZbW4L6mylwTdvNv5gxv-4qKRfnvPG-l-Fv0sKqULAW/exec";
 
-        // Variáveis Globais de Estado
         let dbItems = []; let dbLocais = []; let dbCategoriasComplexas = []; 
         let dbUnidades = []; let dbFornecedores = []; let dbHistorico = []; 
         let dbPerfisAcesso = []; let dbAuditorias = []; 
@@ -715,7 +724,7 @@
 
         let rotaLocaisAProcessar = []; let rotaIndiceAtual = 0; let logAuditoriaSessao = [];
 
-        // 🟢 --- ARQUITETURA DE INICIALIZAÇÃO E BLINDAGEM DE DADOS --- 🟢
+        // 🟢 --- ARQUITETURA DE INICIALIZAÇÃO BLINDADA --- 🟢
         function carregarBancoLocal() {
             dbItems = JSON.parse(localStorage.getItem('tec_items')) || [];
             dbLocais = JSON.parse(localStorage.getItem('tec_locais')) || [];
@@ -731,7 +740,7 @@
 
         function atualizarInterfaceCompleta() {
             if (!perfilAutenticadoGlobal) {
-                renderEstoque(); // Garante que algo seja desenhado
+                renderEstoque(); 
                 return;
             }
             aplicarFiltrosEPolíticasDeSeguranca(); 
@@ -742,14 +751,10 @@
         }
 
         async function iniciarAplicativo() {
-            // 1. CARREGA DA MEMÓRIA INSTANTANEAMENTE
             carregarBancoLocal();
             sincronizarLocaisAntigos();
-
-            // 2. TENTA AUTO-LOGIN
             verificarSessaoSalva();
 
-            // 3. BUSCA ATUALIZAÇÕES DA NUVEM (Em segundo plano)
             if (GOOGLE_SCRIPT_URL !== "SUA_URL_DO_GOOGLE_SCRIPT_AQUI") {
                 try {
                     const res = await fetch(GOOGLE_SCRIPT_URL);
@@ -757,10 +762,9 @@
                     
                     if (data && Array.isArray(data.items)) {
                         
-                        // 🟢 REGRA ANTI-APAGÃO DE DADOS NO 1º USO DO GOOGLE SHEETS 🟢
-                        // Se a nuvem estiver vazia, mas o celular tiver dados, O CELULAR VENCE E MANDA PRA NUVEM!
+                        // 🟢 REGRA ANTI-APAGÃO DE DADOS (F5) 🟢
                         if (data.items.length === 0 && dbItems.length > 0) {
-                            console.log("Proteção Ativada: Nuvem vazia ignorada. Empurrando dados do celular para a nuvem...");
+                            console.log("Nuvem vazia detectada. Restaurando dados com o backup do celular...");
                             salvarDadosNaNuvem();
                         } else {
                             dbItems = data.items;
@@ -784,7 +788,6 @@
                     console.log("Modo Offline Ativo. Nuvem indisponível.");
                 }
             }
-            
             iniciarTempoReal();
         }
 
@@ -813,7 +816,7 @@
                 localStorage.setItem('tec_perfis', JSON.stringify(dbPerfisAcesso));
             } catch (err) {
                 console.error("Erro Crítico ao Salvar:", err);
-                alert("⚠️ ATENÇÃO: O limite de memória offline do seu navegador estourou! A última alteração NÃO foi salva. Delete produtos com fotos muito pesadas ou zere os dados do site nas configurações do navegador.");
+                alert("⚠️ ATENÇÃO: O limite de memória offline do seu navegador estourou! Delete produtos com fotos muito pesadas.");
             }
 
             if (GOOGLE_SCRIPT_URL === "SUA_URL_DO_GOOGLE_SCRIPT_AQUI") return;
@@ -827,9 +830,7 @@
             try {
                 const res = await fetch(GOOGLE_SCRIPT_URL); const data = await res.json();
                 if (data && Array.isArray(data.items)) {
-                    // Prevenção de WIPE repentino
                     if (data.items.length === 0 && dbItems.length > 0) return;
-                    
                     if (JSON.stringify(dbItems) !== JSON.stringify(data.items)) {
                         dbItems = data.items; dbLocais = data.locais || dbLocais; dbAuditorias = data.auditorias || dbAuditorias;
                         sincronizarLocaisAntigos();
@@ -841,38 +842,117 @@
         function iniciarTempoReal() { loopSincronismo = setInterval(sincronismoSilencioso, 10000); }
         function obterIconeAutomatico(nome) { const n = nome ? nome.toLowerCase() : ''; if(n.includes('papel') || n.includes('caderno') || n.includes('caneta')) return '📄'; if(n.includes('contatora')||n.includes('fio') || n.includes('led') || n.includes('lâmpada')) return '⚡'; if(n.includes('detergente')||n.includes('sabão')) return '🧼'; return '📦'; }
 
-        // --- EXPORTAÇÃO E IMPORTAÇÃO ---
-        function abrirModalIntegracao() { document.getElementById('modalIntegracao').classList.add('active'); document.getElementById('importDataTexto').value = ''; }
+        // 🟢 --- MÁQUINA DO TEMPO: EXPORTAÇÃO E RESTAURAÇÃO --- 🟢
+        function abrirModalIntegracao() { document.getElementById('modalIntegracao').classList.add('active'); document.getElementById('uploadBackupInput').value = ''; document.getElementById('chkSubstituirEstoque').checked = false; }
+        
         function exportarEstoqueCSV() {
             let csv = "ID;Codigo;Nome;Localizacao;Categoria;Unidade;Preco;EstoqueAtual;EstoqueMinimo\n";
             dbItems.forEach(i => { csv += `${i.id};${i.codigo||''};${i.nome};${i.localizacao||''};${i.categoria||''};${i.unidade||''};${i.preco};${i.atual};${i.minimo||0}\n`; });
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `estoque_${new Date().getTime()}.csv`; link.click();
         }
+        
         function exportarEstoqueXML() {
             let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<estoque>\n';
-            dbItems.forEach(i => { xml += `  <item>\n    <id>${i.id}</id>\n    <codigo>${i.codigo||''}</codigo>\n    <nome>${i.nome}</nome>\n    <localizacao>${i.localizacao||''}</localizacao>\n    <quantidade>${i.atual}</quantidade>\n    <minimo>${i.minimo||0}</minimo>\n  </item>\n`; });
+            dbItems.forEach(i => { xml += `  <item>\n    <id>${i.id}</id>\n    <codigo>${i.codigo||''}</codigo>\n    <nome>${i.nome}</nome>\n    <localizacao>${i.localizacao||''}</localizacao>\n    <quantidade>${i.atual}</quantidade>\n    <minimo>${i.minimo||0}</minimo>\n    <categoria>${i.categoria||''}</categoria>\n    <unidade>${i.unidade||''}</unidade>\n    <preco>${i.preco||0}</preco>\n  </item>\n`; });
             xml += '</estoque>';
             const blob = new Blob([xml], { type: 'application/xml;charset=utf-8;' });
             const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `estoque_${new Date().getTime()}.xml`; link.click();
         }
-        function processarImportacaoExcel() {
-            const texto = document.getElementById('importDataTexto').value.trim();
-            if(!texto) return alert("Cole os dados na caixa de texto.");
-            const linhas = texto.split('\n'); let inseridos = 0;
-            linhas.forEach(linha => {
-                const colunas = linha.split('\t'); 
-                if (colunas.length >= 2) {
-                    const codigo = colunas[0] ? colunas[0].trim() : ''; const nome = colunas[1] ? colunas[1].trim() : '';
-                    const localizacao = colunas[2] ? colunas[2].trim() : 'Geral'; const atual = colunas[3] ? parseInt(colunas[3].trim()) : 0; const preco = colunas[4] ? parseFloat(colunas[4].trim().replace(',','.')) : 0;
-                    if (nome) {
-                        if (!dbLocais.find(l => l.nome.toLowerCase() === localizacao.toLowerCase()) && localizacao !== 'Geral') { dbLocais.push({ id: "LOC-" + Date.now() + Math.floor(Math.random()*100), nome: localizacao, tipo: "Caixa" }); }
-                        dbItems.push({ id: "IMP-" + Date.now() + Math.random().toString(36).substr(2, 5), codigo, nome, localizacao, atual: isNaN(atual)?0:atual, minimo:0, preco: isNaN(preco)?0:preco, categoria: 'Geral', unidade: 'un' }); inseridos++;
+        
+        function exportarBackupJSON() {
+            const backup = { items: dbItems, locais: dbLocais, categorias: dbCategoriasComplexas, unidades: dbUnidades, fornecedores: dbFornecedores, historico: dbHistorico, auditorias: dbAuditorias, profiles: dbPerfisAcesso };
+            const blob = new Blob([JSON.stringify(backup)], { type: 'application/json' });
+            const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `backup_completo_tecservice_${new Date().getTime()}.json`; link.click();
+        }
+
+        function processarUploadArquivo() {
+            const input = document.getElementById('uploadBackupInput');
+            if(!input.files || input.files.length === 0) return alert("Selecione o arquivo CSV, XML ou JSON primeiro.");
+            
+            const file = input.files[0];
+            const substituir = document.getElementById('chkSubstituirEstoque').checked;
+            
+            if(substituir && !confirm("⚠️ MODO RESTAURAÇÃO: Isso vai apagar o estoque da tela e voltar para os dados exatos deste arquivo. Tem certeza?")) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const conteudo = e.target.result;
+                const extensao = file.name.split('.').pop().toLowerCase();
+                
+                try {
+                    if (extensao === 'json') {
+                        const dados = JSON.parse(conteudo);
+                        if(substituir) {
+                            if(dados.items) dbItems = dados.items;
+                            if(dados.locais) dbLocais = dados.locais;
+                            if(dados.categorias) dbCategoriasComplexas = dados.categorias;
+                            if(dados.unidades) dbUnidades = dados.unidades;
+                            if(dados.fornecedores) dbFornecedores = dados.fornecedores;
+                            if(dados.profiles) dbPerfisAcesso = dados.profiles;
+                        } else {
+                            if(dados.items) dbItems = dbItems.concat(dados.items);
+                        }
+                    } 
+                    else if (extensao === 'csv') {
+                        const linhas = conteudo.split('\n');
+                        let novosItens = [];
+                        for(let i = 1; i < linhas.length; i++) {
+                            if(!linhas[i].trim()) continue;
+                            const colunas = linhas[i].split(';');
+                            if(colunas.length >= 7) {
+                                novosItens.push({
+                                    id: colunas[0] || ("ATV-REC-" + Math.random().toString(36).substr(2, 9)),
+                                    codigo: colunas[1] || '',
+                                    nome: colunas[2] || 'Sem Nome',
+                                    localizacao: colunas[3] || 'Geral',
+                                    categoria: colunas[4] || 'Geral',
+                                    unidade: colunas[5] || 'un',
+                                    preco: parseFloat(colunas[6]) || 0,
+                                    atual: parseInt(colunas[7]) || 0,
+                                    minimo: parseInt(colunas[8]) || 0
+                                });
+                            }
+                        }
+                        if(substituir) dbItems = novosItens; else dbItems = dbItems.concat(novosItens);
                     }
+                    else if (extensao === 'xml') {
+                        const parser = new DOMParser();
+                        const xmlDoc = parser.parseFromString(conteudo, "text/xml");
+                        const itensNodes = xmlDoc.getElementsByTagName("item");
+                        let novosItens = [];
+                        for (let i = 0; i < itensNodes.length; i++) {
+                            const node = itensNodes[i];
+                            const getVal = (tag) => node.getElementsByTagName(tag)[0]?.textContent || '';
+                            novosItens.push({
+                                id: getVal("id") || ("ATV-REC-" + Math.random().toString(36).substr(2, 9)),
+                                codigo: getVal("codigo"),
+                                nome: getVal("nome") || 'Sem Nome',
+                                localizacao: getVal("localizacao") || 'Geral',
+                                atual: parseInt(getVal("quantidade")) || parseInt(getVal("atual")) || 0,
+                                minimo: parseInt(getVal("minimo")) || 0,
+                                preco: parseFloat(getVal("preco")) || 0,
+                                categoria: getVal("categoria") || 'Geral',
+                                unidade: getVal("unidade") || 'un'
+                            });
+                        }
+                        if(substituir) dbItems = novosItens; else dbItems = dbItems.concat(novosItens);
+                    } else {
+                        return alert("Formato inválido! Use .csv, .xml ou .json");
+                    }
+
+                    sincronizarLocaisAntigos();
+                    atualizarInterfaceCompleta();
+                    salvarDadosNaNuvem();
+                    fecharModal('modalIntegracao');
+                    alert("✅ Sistema atualizado com os dados do arquivo com sucesso!");
+                    
+                } catch (error) {
+                    console.error(error);
+                    alert("❌ Erro ao ler o arquivo. Ele pode estar corrompido.");
                 }
-            });
-            fecharModal('modalIntegracao'); atualizarInterfaceCompleta(); salvarDadosNaNuvem();
-            alert(`✅ ${inseridos} itens importados com sucesso!`);
+            };
+            reader.readAsText(file);
         }
 
         // --- ROTA DE AUDITORIA INTELIGENTE ---
@@ -1173,7 +1253,7 @@
             if(!emAuditoria) { if(alterados > 0) { dbAuditorias.push({ id: Date.now(), data: new Date().toISOString(), log: logAuditoriaSessao }); salvarDadosNaNuvem(); alert(`✅ Estoque atualizado! (${alterados} itens alterados)`); } }
         }
 
-        // --- 🟢 AUTENTICAÇÃO E INICIALIZAÇÃO ---
+        // --- 🟢 AUTENTICAÇÃO E SESSÃO ---
         function verificarCredenciaisAcesso(pinAutomatico = null) { 
             const isManual = (typeof pinAutomatico !== 'string');
             const pinDigitado = isManual ? document.getElementById('userAccessPinInput').value.trim() : pinAutomatico; 
@@ -1225,7 +1305,6 @@
                 }
             }
             
-            // Garante que pelo menos o layout do fundo (caso a pessoa não esteja logada) não trave a memória
             popularCombosFormularios(); 
             renderLocais(); 
             renderHistorico(); 
@@ -1239,10 +1318,7 @@
         }
 
         function aplicarFiltrosEPolíticasDeSeguranca() {
-            if (!perfilAutenticadoGlobal) {
-                renderEstoque();
-                return;
-            }
+            if (!perfilAutenticadoGlobal) return;
             const menuHist = document.getElementById('menuHistorico'); const menuConf = document.getElementById('menuConfig'); const menuLoc = document.getElementById('menuLocais'); const btnNovo = document.getElementById('btnActionNovoAtivoTop'); const dashFin = document.getElementById('dashboardFinanceiroGridContainer');
             if (perfilAutenticadoGlobal.master) { menuHist.style.display = 'flex'; menuConf.style.display = 'flex'; menuLoc.style.display = 'flex'; btnNovo.style.display = 'inline-flex'; dashFin ? dashFin.style.display = 'grid' : ''; filtroFiltroEstoque = 'todos'; } else { menuHist.style.display = 'none'; menuConf.style.display = 'none'; menuLoc.style.display = 'none'; dashFin ? dashFin.style.display = 'none' : ''; btnNovo.style.display = perfilAutenticadoGlobal.permissoes && perfilAutenticadoGlobal.permissoes.criar ? 'inline-flex' : 'none'; if (perfilAutenticadoGlobal.categorias && perfilAutenticadoGlobal.categorias.length > 0) filtroFiltroEstoque = perfilAutenticadoGlobal.categorias[0]; else filtroFiltroEstoque = 'nenhum'; }
             renderEstoque();
@@ -1261,10 +1337,8 @@
             else if (alvo === 'config') { document.getElementById('paneConfig').classList.add('active'); document.getElementById('menuConfig').classList.add('active'); renderConfiguracoes(); } 
         }
 
+        // 🟢 REGRA DE EXCLUSÃO ESTABELECIDA NA FUNÇÃO DE RENDERIZAÇÃO 🟢
         function renderEstoque() {
-            // Se falhou ao buscar o ID, força não bugar
-            dbItems.forEach(item => { if (!item.id) item.id = "ATV-REC-" + Math.random().toString(36).substr(2, 9); });
-
             const termoBusca = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase() : ''; 
             const containerFiltros = document.getElementById('filtrosContainer'); containerFiltros.innerHTML = '';
             if (perfilAutenticadoGlobal && !perfilAutenticadoGlobal.master) {
@@ -1276,6 +1350,9 @@
 
             const rowBox = document.getElementById('renderEstoqueRow'); rowBox.innerHTML = ''; let valPatrimonio = 0, valBudget = 0, countCriticos = 0;
             dbItems.forEach(item => {
+                // Previne bug se faltar ID
+                if(!item.id) item.id = "ATV-REC-" + Math.random().toString(36).substr(2, 9);
+                
                 const critico = item.atual < item.minimo; const d = critico ? (item.minimo - item.atual) : 0;
                 valPatrimonio += (item.atual * item.preco); if(critico) { countCriticos++; valBudget += (d * item.preco); }
                 if (perfilAutenticadoGlobal && !perfilAutenticadoGlobal.master && perfilAutenticadoGlobal.categorias && !perfilAutenticadoGlobal.categorias.includes(item.categoria)) return;
@@ -1303,9 +1380,7 @@
         function filtrarPainelEstoque(alvo) { filtroFiltroEstoque = alvo; renderEstoque(); }
 
         function abrirModalItem() { document.getElementById('modalItemOverlay').classList.add('active'); popularCombosFormularios(); document.getElementById('formId').value = ''; document.getElementById('formCodigo').value = ''; document.getElementById('formMarca').value = ''; document.getElementById('formNome').value = ''; document.getElementById('formLocalizacao').value = ''; document.getElementById('formPreco').value = ''; document.getElementById('formAtual').value = ''; document.getElementById('formMinimo').value = ''; document.getElementById('formFotoBase64').value = ''; }
-        
         function editarItem(id) { const item = dbItems.find(m => String(m.id) === String(id)); if(item) { abrirModalItem(); document.getElementById('formId').value = item.id; document.getElementById('formCodigo').value = item.codigo || ''; document.getElementById('formMarca').value = item.marca || ''; document.getElementById('formNome').value = item.nome; document.getElementById('formLocalizacao').value = item.localizacao || ''; document.getElementById('formCategoria').value = item.categoria; document.getElementById('formUnidade').value = item.unidade; document.getElementById('formFornecedor').value = item.fornecedor || 'Nenhum'; document.getElementById('formPreco').value = item.preco; document.getElementById('formAtual').value = item.atual; document.getElementById('formMinimo').value = item.minimo; document.getElementById('formFotoBase64').value = item.foto || ''; } }
-        
         function salvarItem() {
             const id = document.getElementById('formId').value; const codigo = document.getElementById('formCodigo').value.trim(); const colMarca = document.getElementById('formMarca').value.trim(); const nome = document.getElementById('formNome').value.trim(); const localizacao = document.getElementById('formLocalizacao').value.trim(); const categoria = document.getElementById('formCategoria').value; const unidade = document.getElementById('formUnidade').value; const forn = document.getElementById('formFornecedor').value; const preco = parseFloat(document.getElementById('formPreco').value) || 0; const atual = parseInt(document.getElementById('formAtual').value) || 0; const minimo = parseInt(document.getElementById('formMinimo').value) || 0; const foto = document.getElementById('formFotoBase64').value;
             if(!nome) return alert("Nome inválido!");
@@ -1313,7 +1388,7 @@
             fecharModal('modalItemOverlay'); atualizarInterfaceCompleta(); salvarDadosNaNuvem();
         }
         
-        // 🟢 REGRA DE EXCLUSÃO ESTABELECIDA 🟢
+        // 🟢 BOTÃO DE DELETAR CORRIGIDO COM COMPARAÇÃO ESTRITA 🟢
         function deletarItem(id) { 
             if(confirm("Confirmar exclusão definitiva deste ativo?")) { 
                 dbItems = dbItems.filter(m => String(m.id).trim() !== String(id).trim()); 
@@ -1321,7 +1396,7 @@
                 salvarDadosNaNuvem(); 
             } 
         }
-        
+
         // 🟢 COMPRESSOR DE IMAGENS AUTOMÁTICO 
         function processarImagemLocal(input) { 
             const arquivo = input.files[0]; 
