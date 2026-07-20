@@ -51,6 +51,7 @@
         .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         .topbar { padding: 24px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: rgba(12, 18, 38, 0.02); backdrop-filter: blur(20px); }
         .page-title h2 { font-size: 22px; font-weight: 800; font-family: 'DM Serif Display', serif; }
+        .page-title p { font-size: 13px; color: var(--ink-muted); margin-top: 2px; }
         .topbar-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
         .view-pane { flex: 1; padding: 40px; overflow-y: auto; display: none; }
         .view-pane.active { display: block; }
@@ -128,6 +129,7 @@
         /* CONFIGS E MATRIZ DE CHECKBOXES */
         .print-selector-container { max-height: 160px; overflow-y: auto; border: 1px solid var(--border); padding: 12px; border-radius: 8px; background: var(--card2); display: flex; flex-direction: column; gap: 8px; }
         .print-selector-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; cursor: pointer; margin-bottom:4px; }
+        .print-selector-item input { width: 16px; height: 16px; cursor: pointer; }
         .print-selector-divider { height: 1px; background: var(--border); margin: 4px 0; }
         .matrix-permissions-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: var(--card2); padding: 12px; border: 1px solid var(--border); border-radius: 8px; }
         
@@ -235,13 +237,11 @@
 </head>
 <body data-theme="light">
 
-    <!-- BARRA DE STATUS DA AUDITORIA -->
     <div class="audit-status-bar" id="auditStatusBar">
         <span>⚠️ AUDITORIA EM ANDAMENTO</span>
         <button class="btn btn-sucesso" style="padding:8px 15px;" onclick="finalizarRelatorioAuditoria()">CONCLUIR E SALVAR</button>
     </div>
 
-    <!-- GATEWAY DE LOGIN -->
     <div class="login-overlay" id="loginGatewayScreen">
         <div class="login-box">
             <h2>TECSERVICE Enterprise</h2>
@@ -253,7 +253,6 @@
     </div>
 
     <div class="layout-wrapper">
-        <!-- SIDEBAR -->
         <nav class="sidebar area-normal-sistema">
             <div>
                 <div class="brand">TECSERVICE</div>
@@ -271,21 +270,19 @@
             </div>
         </nav>
 
-        <!-- CONTEÚDO PRINCIPAL -->
         <main class="main-content area-normal-sistema">
             <header class="topbar">
                 <div class="page-title">
                     <h2 id="txtTopTitulo">Estoque Central</h2>
                 </div>
                 <div class="topbar-actions" id="topbarActionsArea">
-                    <button class="btn btn-secundario" onclick="abrirModalIntegracao()">🔄 Integração (ERP/Excel)</button>
+                    <button class="btn btn-secundario" onclick="abrirModalIntegracao()">🔄 Integração</button>
                     <button class="btn btn-sucesso" onclick="iniciarRotaAuditoria()">🧭 Iniciar Auditoria</button>
                     <button class="btn btn-secundario" onclick="abrirModalPrint()">🖨️ Imprimir</button>
                     <button class="btn btn-primario" id="btnActionNovoAtivoTop" onclick="abrirModalItem()">➕ Novo Ativo</button>
                 </div>
             </header>
 
-            <!-- ABA 1: ESTOQUE -->
             <section id="paneEstoque" class="view-pane active">
                 <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Buscar por código, nome, marca ou caixa..." oninput="renderEstoque()">
                 
@@ -300,7 +297,6 @@
                 <div class="produtos-lista" id="renderEstoqueRow"></div>
             </section>
 
-            <!-- ABA 2: LOCAIS / CAIXAS -->
             <section id="paneLocais" class="view-pane">
                 <div style="display:flex; justify-content:space-between; margin-bottom:20px; align-items:center; flex-wrap:wrap; gap:10px;">
                     <h2 style="font-size:20px;">Gestão de Caixas e Prateleiras</h2>
@@ -312,7 +308,6 @@
                 <div id="renderLocaisGrid" class="dashboard-grid"></div>
             </section>
 
-            <!-- ABA 3: HISTÓRICO E LOGS DE AUDITORIA -->
             <section id="paneHistorico" class="view-pane">
                 <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
                     <h2>Histórico e Auditorias</h2>
@@ -326,7 +321,6 @@
                 </div>
             </section>
 
-            <!-- ABA 4: CONFIGURAÇÕES -->
             <section id="paneConfig" class="view-pane">
                 <div class="config-section">
                     <div class="config-box" style="grid-column: span 2;">
@@ -378,12 +372,8 @@
         </main>
     </div>
 
-    <!-- BOTÃO FLUTUANTE DA CÂMERA -->
     <div class="floating-scan-btn area-normal-sistema" onclick="abrirScanner()">📷</div>
 
-    <!-- 🟢 MODAIS (Únicos) 🟢 -->
-
-    <!-- INTEGRAÇÃO / EXPORT / IMPORT -->
     <div class="modal-overlay" id="modalIntegracao">
         <div class="modal-content">
             <div class="modal-header">
@@ -406,7 +396,6 @@
         </div>
     </div>
 
-    <!-- ROTA DE AUDITORIA INTELIGENTE -->
     <div class="modal-overlay" id="modalRotaAuditoria">
         <div class="modal-content">
             <div class="modal-header">
@@ -428,7 +417,6 @@
         </div>
     </div>
 
-    <!-- VISUALIZAR LOG DE AUDITORIA -->
     <div class="modal-overlay" id="modalVerAuditoriaLog">
         <div class="modal-content" style="max-width: 700px;">
             <div class="modal-header">
@@ -440,7 +428,6 @@
         </div>
     </div>
 
-    <!-- SCANNER DE CÂMERA -->
     <div class="modal-overlay" id="modalScanner">
         <div class="modal-content">
             <div class="modal-header">
@@ -453,7 +440,6 @@
         </div>
     </div>
 
-    <!-- GERAR ETIQUETA QR -->
     <div class="modal-overlay" id="modalGeradorQR">
         <div class="modal-content">
             <div class="modal-header">
@@ -486,7 +472,6 @@
         </div>
     </div>
 
-    <!-- AUDITORIA RÁPIDA (Scanner Livre ou Botão Direto) -->
     <div class="modal-overlay" id="modalAuditoriaRapida">
         <div class="modal-content">
             <div class="modal-header">
@@ -499,7 +484,6 @@
         </div>
     </div>
 
-    <!-- CRIAR NOVO LOCAL/CAIXA -->
     <div class="modal-overlay" id="modalLocalOverlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -520,7 +504,6 @@
         </div>
     </div>
 
-    <!-- CADASTRO / EDIÇÃO DE ATIVO -->
     <div class="modal-overlay" id="modalItemOverlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -615,7 +598,6 @@
         </div>
     </div>
 
-    <!-- REGISTRAR COMPRA -->
     <div class="modal-overlay" id="modalLancamentoOverlay">
         <div class="modal-content" style="max-width: 440px;">
             <div class="modal-header">
@@ -632,7 +614,6 @@
         </div>
     </div>
 
-    <!-- IMPRESSÃO DINÂMICA -->
     <div class="modal-overlay" id="modalPrintOverlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -681,7 +662,6 @@
         </div>
     </div>
 
-    <!-- ÁREAS EXCLUSIVAS PARA IMPRESSÃO -->
     <div class="area-exclusiva-impressao" id="printSystemArea">
         <div class="print-container">
             <div class="print-header">
@@ -764,7 +744,7 @@
                         sincronizarLocaisAntigos();
                         salvarDadosNaNuvem(); 
                         
-                        // Atualiza a tela se já estiver logado
+                        // Se o usuário está logado e usando o app, re-desenha a tela com os dados novos da nuvem
                         if (perfilAutenticadoGlobal) {
                             atualizarInterfaceCompleta();
                         }
@@ -790,15 +770,21 @@
             if(locaisAlterados && GOOGLE_SCRIPT_URL !== "SUA_URL_DO_GOOGLE_SCRIPT_AQUI") salvarDadosNaNuvem();
         }
 
+        // 🟢 TRY/CATCH DE SEGURANÇA PARA AVISAR SE A MEMÓRIA DO CELULAR ENCHER 🟢
         async function salvarDadosNaNuvem() {
-            localStorage.setItem('tec_items', JSON.stringify(dbItems));
-            localStorage.setItem('tec_locais', JSON.stringify(dbLocais));
-            localStorage.setItem('tec_cat_complexas', JSON.stringify(dbCategoriasComplexas));
-            localStorage.setItem('tec_unidades', JSON.stringify(dbUnidades));
-            localStorage.setItem('tec_fornecedores', JSON.stringify(dbFornecedores));
-            localStorage.setItem('tec_historico', JSON.stringify(dbHistorico));
-            localStorage.setItem('tec_auditorias', JSON.stringify(dbAuditorias));
-            localStorage.setItem('tec_perfis', JSON.stringify(dbPerfisAcesso));
+            try {
+                localStorage.setItem('tec_items', JSON.stringify(dbItems));
+                localStorage.setItem('tec_locais', JSON.stringify(dbLocais));
+                localStorage.setItem('tec_cat_complexas', JSON.stringify(dbCategoriasComplexas));
+                localStorage.setItem('tec_unidades', JSON.stringify(dbUnidades));
+                localStorage.setItem('tec_fornecedores', JSON.stringify(dbFornecedores));
+                localStorage.setItem('tec_historico', JSON.stringify(dbHistorico));
+                localStorage.setItem('tec_auditorias', JSON.stringify(dbAuditorias));
+                localStorage.setItem('tec_perfis', JSON.stringify(dbPerfisAcesso));
+            } catch (err) {
+                console.error("Erro Crítico ao Salvar:", err);
+                alert("⚠️ ATENÇÃO: O limite de memória offline do seu navegador estourou! A última alteração NÃO foi salva. Delete produtos com fotos muito pesadas ou zere os dados do site nas configurações do navegador.");
+            }
 
             if (GOOGLE_SCRIPT_URL === "SUA_URL_DO_GOOGLE_SCRIPT_AQUI") return;
             const payload = { items: dbItems, locais: dbLocais, categories: dbCategoriasComplexas, units: dbUnidades, suppliers: dbFornecedores, history: dbHistorico, auditorias: dbAuditorias, profiles: dbPerfisAcesso };
@@ -1152,12 +1138,11 @@
             if(!emAuditoria) { if(alterados > 0) { dbAuditorias.push({ id: Date.now(), data: new Date().toISOString(), log: logAuditoriaSessao }); salvarDadosNaNuvem(); alert(`✅ Estoque atualizado! (${alterados} itens alterados)`); } }
         }
 
-        // --- 🟢 AUTENTICAÇÃO E INICIALIZAÇÃO CORRIGIDAS ---
+        // --- 🟢 AUTENTICAÇÃO E INICIALIZAÇÃO BLINDADAS ---
         function verificarCredenciaisAcesso(pinAutomatico = null) { 
             const isManual = (typeof pinAutomatico !== 'string');
             const pinDigitado = isManual ? document.getElementById('userAccessPinInput').value.trim() : pinAutomatico; 
             
-            // Compara os PINs forçando conversão pra texto para evitar erros
             const perfilEncontrado = dbPerfisAcesso.find(p => String(p.pin).trim() === String(pinDigitado).trim()); 
             
             if (perfilEncontrado) { 
@@ -1170,9 +1155,10 @@
                     localStorage.setItem('tec_session_time', Date.now().toString());
                 }
 
+                // Atualiza a tela com os dados preenchidos
                 atualizarInterfaceCompleta();
                 
-                // Força a navegação para o estoque no boot, garantindo que nada fique branco
+                // Força a tela a mudar para Estoque Central
                 navegar('estoque'); 
                 
                 if(loopSincronismo) clearInterval(loopSincronismo);
@@ -1184,7 +1170,7 @@
                     err.style.display = 'block'; 
                     setTimeout(() => { err.style.display = 'none'; }, 3000); 
                 } else {
-                    fazerLogout(); // A senha salva não bate com nenhum perfil (alguém pode ter apagado o perfil dele)
+                    fazerLogout();
                 }
                 return false;
             } 
@@ -1204,7 +1190,6 @@
                 }
             }
             
-            // Se não tiver logado, garante que pelo menos os dados invisíveis estejam formatados
             popularCombosFormularios(); 
             renderLocais(); 
             renderHistorico(); 
@@ -1219,28 +1204,8 @@
 
         function aplicarFiltrosEPolíticasDeSeguranca() {
             if (!perfilAutenticadoGlobal) return;
-            const menuHist = document.getElementById('menuHistorico'); 
-            const menuConf = document.getElementById('menuConfig'); 
-            const menuLoc = document.getElementById('menuLocais'); 
-            const btnNovo = document.getElementById('btnActionNovoAtivoTop'); 
-            
-            if (perfilAutenticadoGlobal.master) { 
-                menuHist.style.display = 'flex'; 
-                menuConf.style.display = 'flex'; 
-                menuLoc.style.display = 'flex'; 
-                btnNovo.style.display = 'inline-flex'; 
-                filtroFiltroEstoque = 'todos'; 
-            } else { 
-                menuHist.style.display = 'none'; 
-                menuConf.style.display = 'none'; 
-                menuLoc.style.display = 'none'; 
-                btnNovo.style.display = perfilAutenticadoGlobal.permissoes && perfilAutenticadoGlobal.permissoes.criar ? 'inline-flex' : 'none'; 
-                if (perfilAutenticadoGlobal.categorias && perfilAutenticadoGlobal.categorias.length > 0) {
-                    filtroFiltroEstoque = perfilAutenticadoGlobal.categorias[0]; 
-                } else {
-                    filtroFiltroEstoque = 'nenhum'; 
-                }
-            }
+            const menuHist = document.getElementById('menuHistorico'); const menuConf = document.getElementById('menuConfig'); const menuLoc = document.getElementById('menuLocais'); const btnNovo = document.getElementById('btnActionNovoAtivoTop'); const dashFin = document.getElementById('dashboardFinanceiroGridContainer');
+            if (perfilAutenticadoGlobal.master) { menuHist.style.display = 'flex'; menuConf.style.display = 'flex'; menuLoc.style.display = 'flex'; btnNovo.style.display = 'inline-flex'; dashFin.style.display = 'grid'; filtroFiltroEstoque = 'todos'; } else { menuHist.style.display = 'none'; menuConf.style.display = 'none'; menuLoc.style.display = 'none'; dashFin.style.display = 'none'; btnNovo.style.display = perfilAutenticadoGlobal.permissoes && perfilAutenticadoGlobal.permissoes.criar ? 'inline-flex' : 'none'; if (perfilAutenticadoGlobal.categorias && perfilAutenticadoGlobal.categorias.length > 0) filtroFiltroEstoque = perfilAutenticadoGlobal.categorias[0]; else filtroFiltroEstoque = 'nenhum'; }
             renderEstoque();
         }
         
@@ -1304,7 +1269,42 @@
             fecharModal('modalItemOverlay'); atualizarInterfaceCompleta(); salvarDadosNaNuvem();
         }
         function deletarItem(id) { if(confirm("Confirmar exclusão?")) { dbItems = dbItems.filter(m => m.id != id); atualizarInterfaceCompleta(); salvarDadosNaNuvem(); } }
-        function processarImagemLocal(input) { const arquivo = input.files[0]; if (arquivo) { const leitor = new FileReader(); leitor.onload = function(e) { document.getElementById('formFotoBase64').value = e.target.result; alert("✅ Imagem carregada com sucesso!"); }; leitor.readAsDataURL(arquivo); } }
+        
+        // 🟢 COMPRESSOR DE IMAGENS AUTOMÁTICO (Impede o erro de falta de memória)
+        function processarImagemLocal(input) { 
+            const arquivo = input.files[0]; 
+            if (!arquivo) return; 
+            
+            const leitor = new FileReader(); 
+            leitor.onload = function(e) { 
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    // Se a imagem for enorme (câmera de celular), encolhe ela para no máximo 400px
+                    if (width > 400) {
+                        height = Math.round(height * (400 / width));
+                        width = 400;
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Transforma em arquivo JPG levinho
+                    const base64Otimizado = canvas.toDataURL('image/jpeg', 0.6); 
+                    
+                    document.getElementById('formFotoBase64').value = base64Otimizado; 
+                    alert("✅ Imagem comprimida e carregada com sucesso!"); 
+                };
+                img.src = e.target.result;
+            }; 
+            leitor.readAsDataURL(arquivo); 
+        }
+
         function toggleSubForm(id) { const f = document.getElementById(id); f.style.display = f.style.display === 'flex' ? 'none' : 'flex'; }
         
         function salvarCategoriaInline() { const nome = document.getElementById('inlineCatNome').value.trim(); const colCor = document.getElementById('inlineCatCor').value; if(!nome) return; if(!dbCategoriasComplexas.some(c => c.nome.toLowerCase() === nome.toLowerCase())) { dbCategoriasComplexas.push({ nome, cor: colCor }); document.getElementById('inlineCatNome').value = ''; document.getElementById('inlineFormCategoria').style.display = 'none'; popularCombosFormularios(); renderConfiguracoes(); atualizarInterfaceCompleta(); salvarDadosNaNuvem(); } }
