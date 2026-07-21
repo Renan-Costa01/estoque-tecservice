@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estoque • TECSERVICE</title>
+    <title>TecCheck Enterprise • TECSERVICE</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -714,7 +714,7 @@
         let dbItems = []; let dbLocais = []; let dbCategoriasComplexas = []; 
         let dbUnidades = []; let dbFornecedores = []; let dbHistorico = []; 
         let dbPerfisAcesso = []; let dbAuditorias = []; 
-        
+        let bloqueioSincronismoDeEscrita = false;
         let perfilAutenticadoGlobal = null; 
         let filtroFiltroEstoque = 'todos';
         let html5QrcodeScanner = null; 
@@ -832,12 +832,21 @@
             }
 
             if (GOOGLE_SCRIPT_URL === "SUA_URL_DO_GOOGLE_SCRIPT_AQUI") return;
+            
+            // 🛡️ ESCUDO ANTI-FANTASMA: Bloqueia a leitura da nuvem para dar tempo do Google Sheets pensar
+            bloqueioSincronismoDeEscrita = true;
+            
             const payload = { items: dbItems, locais: dbLocais, categories: dbCategoriasComplexas, units: dbUnidades, suppliers: dbFornecedores, history: dbHistorico, auditorias: dbAuditorias, profiles: dbPerfisAcesso };
             try { await fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }); } catch (e) {}
+
+            // Libera a leitura da nuvem 5 segundos depois da ação
+            setTimeout(() => { bloqueioSincronismoDeEscrita = false; }, 5000);
         }
 
         async function sincronismoSilencioso() {
-            if (emAuditoria || document.querySelector('.modal-overlay.active')) return;
+            // Se tiver tela aberta ou escudo de escrita ativo, ignora a busca!
+            if (emAuditoria || document.querySelector('.modal-overlay.active') || bloqueioSincronismoDeEscrita) return;
+            
             if (GOOGLE_SCRIPT_URL === "SUA_URL_DO_GOOGLE_SCRIPT_AQUI") return;
             try {
                 const res = await fetch(GOOGLE_SCRIPT_URL); const data = await res.json();
@@ -1467,10 +1476,24 @@
 
         function popularCombosFormularios() {
             const selCat = document.getElementById('formCategoria'); const selUn = document.getElementById('formUnidade'); const selForn = document.getElementById('formFornecedor'); const selLoc = document.getElementById('formLocalizacao');
+            
+            // 🛡️ MEMÓRIA DE PREENCHIMENTO: Salva o que você já selecionou antes de atualizar a lista
+            const valCat = selCat ? selCat.value : '';
+            const valUn = selUn ? selUn.value : '';
+            const valForn = selForn ? selForn.value : '';
+            const valLoc = selLoc ? selLoc.value : '';
+
             if(selCat) { selCat.innerHTML = ''; (dbCategoriasComplexas||[]).forEach(c => selCat.innerHTML += `<option value="${c.nome}">${c.nome}</option>`); }
             if(selUn) { selUn.innerHTML = ''; (dbUnidades||[]).forEach(u => selUn.innerHTML += `<option value="${u}">${u}</option>`); }
             if(selForn) { selForn.innerHTML = '<option value="Nenhum">Nenhum Fornecedor</option>'; (dbFornecedores||[]).forEach(f => selForn.innerHTML += `<option value="${f.nome}">${f.nome}</option>`); }
             if(selLoc) { selLoc.innerHTML = '<option value="">(Localização Geral)</option>'; (dbLocais||[]).forEach(l => selLoc.innerHTML += `<option value="${l.nome}">${l.nome}</option>`); }
+            
+            // 🛡️ DEVOLVE OS VALORES: Coloca de volta o que estava selecionado
+            if(selCat && valCat) selCat.value = valCat;
+            if(selUn && valUn) selUn.value = valUn;
+            if(selForn && valForn) selForn.value = valForn;
+            if(selLoc && valLoc) selLoc.value = valLoc;
+
             const containerCheckboxesConfig = document.getElementById('configPerfilCategoriasChecklist'); 
             if(containerCheckboxesConfig) {
                 containerCheckboxesConfig.innerHTML = `<label class="print-selector-item" style="font-weight: 700;"><input type="checkbox" id="configPerfilSelectAllCatsTrigger" onchange="alternarTodasCategoriasFormPerfil(this)"><span>🌐 [Selecionar Todas as Categorias]</span></label><div class="print-selector-divider"></div>`;
