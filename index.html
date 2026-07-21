@@ -1675,18 +1675,14 @@
                 .catch(err => console.log('Falha no App Offline', err));
             });
         }
-        // 🤖 MOTOR DA INTELIGÊNCIA ARTIFICIAL INTELIGENTE (GROQ / LLAMA 3.3) 🤖
-        // 🤖 MOTOR DA INTELIGÊNCIA ARTIFICIAL (SEGURO PARA GITHUB E BLOCO DE NOTAS) 🤖
-        const GROQ_API_KEY = atob("Z3NrX2x3TWxCSFV3TExuQkJ2ZWV5Slp5V0dkeWIzRlkxb0M3ajQ5QnZwdTF0SENDYXpmYkRVajBp"); 
+        // 🤖 ASSISTENTE INTELIGENTE LOCAL COM SINÔNIMOS E LÓGICA CORPORATIVA 🤖
         
         function toggleChat() {
             const chat = document.getElementById('iaChatWindow');
             chat.classList.toggle('active');
         }
 
-        async function enviarMsgIA() {
-            if(!GROQ_API_KEY) return alert("Chave da IA não configurada.");
-
+        function enviarMsgIA() {
             const inputEl = document.getElementById('iaChatInput');
             const msgUsuario = inputEl.value.trim();
             if(!msgUsuario) return;
@@ -1696,52 +1692,64 @@
             inputEl.value = '';
             chatBody.scrollTop = chatBody.scrollHeight;
 
-            chatBody.innerHTML += `<div class="chat-msg ai" id="iaDigitando">Pensando...</div>`;
+            chatBody.innerHTML += `<div class="chat-msg ai" id="iaDigitando">Pesquisando no estoque...</div>`;
             chatBody.scrollTop = chatBody.scrollHeight;
 
-            // Transforma o estoque em texto para a IA cruzar os dados
-            const inventarioResumido = dbItems.map(i => `${i.nome} (Cód: ${i.codigo||'-'}): ${i.atual} ${i.unidade||''} na ${i.localizacao||'Geral'}. Preço: R$${i.preco||0}`).join(' | ');
-
-            const promptSistema = `Você é o assistente logístico inteligente do sistema TecCheck. 
-            Responda de forma direta, educada e prestativa. 
-            SEJA INTELIGENTE COM SINÔNIMOS E MARCAS: Se o usuário perguntar por um termo genérico, apelido ou marca popular (ex: "caneta bic") e no estoque houver algo similar ou equivalente (ex: "caneta azul"), você DEVE associar e responder informando o item correspondente do estoque.
-            Dados atuais do estoque: [${inventarioResumido}].
-            Se a pergunta for apenas uma saudação (ex: "oi", "olá"), responda amigavelmente se colocando à disposição para gerenciar o almoxarifado.`;
-
-            try {
-                const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${GROQ_API_KEY}`
-                    },
-                    body: JSON.stringify({
-                        model: "llama-3.3-70b-versatile",
-                        messages: [
-                            { role: "system", content: promptSistema },
-                            { role: "user", content: msgUsuario }
-                        ],
-                        temperature: 0.3
-                    })
-                });
+            setTimeout(() => {
+                document.getElementById('iaDigitando').remove();
                 
-                const data = await response.json();
-                
-                if(data.error) {
-                    throw new Error(data.error.message);
+                const termo = msgUsuario.toLowerCase();
+                let resposta = "";
+
+                // 1. Tratamento de Saudações
+                if (termo === 'oi' || termo === 'olá' || termo === 'tudo bem' || termo === 'bom dia' || termo === 'boa tarde') {
+                    resposta = "Olá! Sou o assistente inteligente do TecCheck. Estou à disposição para ajudar você a consultar o estoque, verificar itens críticos ou gerenciar o almoxarifado. O que você precisa?";
+                } 
+                // 2. Resumo Geral / Listagem
+                else if (termo.includes('tudo') || termo.includes('listar') || termo.includes('geral') || termo.includes('itens') || termo.includes('resumo')) {
+                    if (dbItems.length === 0) {
+                        resposta = "O estoque central está vazio no momento.";
+                    } else {
+                        resposta = `📋 **Resumo do Estoque (${dbItems.length} ativos cadastrados):**<br><br>` + 
+                            dbItems.map(i => `• <b>${i.nome}</b>: ${i.atual} ${i.unidade || 'un'} (Local: <b>${i.localizacao || 'Geral'}</b>)`).join('<br>');
+                    }
+                } 
+                // 3. Itens Críticos / Falta / Compras
+                else if (termo.includes('crítico') || termo.includes('falta') || termo.includes('comprar') || termo.includes('alerta') || termo.includes('precisa')) {
+                    const criticos = dbItems.filter(i => (parseInt(i.atual) || 0) < (parseInt(i.minimo) || 0));
+                    if (criticos.length === 0) {
+                        resposta = "✅ **Tudo em ordem!** Nenhum item está abaixo do estoque mínimo de alerta no momento.";
+                    } else {
+                        resposta = `⚠️ **Atenção - Itens abaixo do mínimo:**<br><br>` + 
+                            criticos.map(i => `• <b>${i.nome}</b><br>  - Atual: ${i.atual} | Mínimo: ${i.minimo}`).join('<br>');
+                    }
+                } 
+                // 4. Busca Inteligente com Sinônimos e Termos Populares (Ex: Caneta Bic -> Caneta Azul)
+                else {
+                    let buscaTermo = termo;
+                    // Mapeamento inteligente de sinônimos comuns
+                    if (buscaTermo.includes('bic') || buscaTermo.includes('esferográfica')) buscaTermo = 'caneta';
+                    if (buscaTermo.includes('xerox') || buscaTermo.includes('folha')) buscaTermo = 'papel';
+
+                    const encontrados = dbItems.filter(i => 
+                        (i.nome && i.nome.toLowerCase().includes(buscaTermo)) || 
+                        (i.codigo && i.codigo.toLowerCase().includes(buscaTermo)) ||
+                        (i.localizacao && i.localizacao.toLowerCase().includes(buscaTermo)) ||
+                        (i.categoria && i.categoria.toLowerCase().includes(buscaTermo)) ||
+                        (i.nome && i.nome.toLowerCase().includes(termo))
+                    );
+
+                    if (encontrados.length > 0) {
+                        resposta = `🔍 **Encontrei estes dados no sistema:**<br><br>` + 
+                            encontrados.map(i => `• <b>${i.nome}</b><br>  - Cód: ${i.codigo || 'S/C'}<br>  - Quantidade: <b>${i.atual} ${i.unidade || 'un'}</b><br>  - Local: <span style="color:var(--accent)">${i.localizacao || 'Geral'}</span><br>  - Preço: R$ ${(parseFloat(i.preco)||0).toFixed(2)}`).join('<br><br>');
+                    } else {
+                        resposta = `Desculpe, não encontrei nenhum registro correspondente a "<b>${msgUsuario}</b>" no estoque. Tente buscar pelo nome do produto, código ou nome da caixa/local.`;
+                    }
                 }
 
-                const respostaIA = data.choices[0].message.content;
-                
-                document.getElementById('iaDigitando').remove();
-                chatBody.innerHTML += `<div class="chat-msg ai">${respostaIA}</div>`;
+                chatBody.innerHTML += `<div class="chat-msg ai">${resposta}</div>`;
                 chatBody.scrollTop = chatBody.scrollHeight;
-                
-            } catch (error) {
-                document.getElementById('iaDigitando').remove();
-                chatBody.innerHTML += `<div class="chat-msg ai" style="color:var(--red);">Erro na conexão com a IA. Verifique a chave.</div>`;
-                console.error(error);
-            }
+            }, 300);
         }
     </script>
     <!-- 🤖 CHATBOT WIDGET -->
