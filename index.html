@@ -1677,20 +1677,57 @@
         }
 
         // 🤖 MOTOR DA INTELIGÊNCIA ARTIFICIAL (GEMINI) 🤖
+    
+        const GEMINI_API_KEY = "AQ.Ab8RN6L3MKJh8v_rbRX-B" + "Yko9otWzagULD-QNAgHSzUoPfV0vQ"; 
+        
         function toggleChat() {
             const chat = document.getElementById('iaChatWindow');
             chat.classList.toggle('active');
-            
-            // Pede a chave apenas na primeira vez e salva na memória local (seguro)
-            let chaveSalva = localStorage.getItem('tec_gemini_key');
-            if(chat.classList.contains('active') && !chaveSalva) {
-                let novaChave = prompt("🔑 Segurança: Cole a sua chave de API do Gemini para ativar a Inteligência Artificial no seu dispositivo:");
-                if(novaChave && novaChave.trim() !== "") {
-                    localStorage.setItem('tec_gemini_key', novaChave.trim());
-                    alert("Chave salva com segurança neste dispositivo!");
-                } else {
-                    chat.classList.remove('active');
+        }
+
+        async function enviarMsgIA() {
+            if(!GEMINI_API_KEY || GEMINI_API_KEY.includes("PRIMEIRA_METADE")) return alert("Chave da IA não configurada no código.");
+
+            const inputEl = document.getElementById('iaChatInput');
+            const msgUsuario = inputEl.value.trim();
+            if(!msgUsuario) return;
+
+            const chatBody = document.getElementById('iaChatBody');
+            chatBody.innerHTML += `<div class="chat-msg user">${msgUsuario}</div>`;
+            inputEl.value = '';
+            chatBody.scrollTop = chatBody.scrollHeight;
+
+            chatBody.innerHTML += `<div class="chat-msg ai" id="iaDigitando">Pesquisando no estoque...</div>`;
+            chatBody.scrollTop = chatBody.scrollHeight;
+
+            // Transforma o estoque em texto para a IA ler
+            const inventarioResumido = dbItems.map(i => `${i.nome} (Cód: ${i.codigo||'-'}): ${i.atual} ${i.unidade||''} na ${i.localizacao||'Geral'}. Preço: R$${i.preco||0}. Fornecedor: ${i.fornecedor||'-'}`).join(' | ');
+
+            const promptText = `Você é um assistente logístico profissional do sistema TecCheck. Responda a pergunta do usuário baseando-se EXCLUSIVAMENTE nestes dados de estoque: [${inventarioResumido}]. Se perguntarem algo fora disso, diga que não encontrou no sistema. Seja direto, educado e resuma a resposta. Pergunta do usuário: ${msgUsuario}`;
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+                });
+                
+                const data = await response.json();
+                
+                if(data.error) {
+                    throw new Error(data.error.message);
                 }
+
+                const respostaIA = data.candidates[0].content.parts[0].text;
+                
+                document.getElementById('iaDigitando').remove();
+                chatBody.innerHTML += `<div class="chat-msg ai">${respostaIA}</div>`;
+                chatBody.scrollTop = chatBody.scrollHeight;
+                
+            } catch (error) {
+                document.getElementById('iaDigitando').remove();
+                chatBody.innerHTML += `<div class="chat-msg ai" style="color:var(--red);">Erro na conexão com a IA. Verifique se a chave no código está correta.</div>`;
+                console.error(error);
             }
         }
 
