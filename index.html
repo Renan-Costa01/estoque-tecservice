@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TecCheck Enterprise • TECSERVICE</title>
+    <title>TecCheck - TECSERVICE</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -11,6 +11,10 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- 🟢 FIREBASE SDKs 🟢 -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     
     <style>
         /* ══════════ THEMES ══════════ */
@@ -402,17 +406,17 @@
             </div>
 
             <div style="background:var(--card2); padding:15px; border-radius:10px; border:1px dashed var(--accent);">
-                <h4 style="margin-bottom:10px; font-size:14px; color:var(--accent);">📥 Importar ou Restaurar Backup</h4>
-                <p style="font-size:12px; color:var(--ink-muted); margin-bottom:15px;">Faça o upload do arquivo baixado (Excel CSV, XML ou o arquivo .json do Backup Completo).</p>
+                <h4 style="margin-bottom:10px; font-size:14px; color:var(--accent);">📥 Importar Planilha CSV ou JSON</h4>
+                <p style="font-size:12px; color:var(--ink-muted); margin-bottom:15px;">Faça o upload do arquivo baixado (Excel CSV, XML ou .json).</p>
                 
                 <input type="file" id="uploadBackupInput" accept=".csv, .xml, .json" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--card); margin-bottom:15px;">
                 
                 <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:bold; color:var(--red); margin-bottom:15px; cursor:pointer;">
                     <input type="checkbox" id="chkSubstituirEstoque" style="width:16px; height:16px;">
-                    ⚠️ APAGAR estoque atual e substituir por este arquivo (Restauração)
+                    ⚠️ Sobrescrever dados existentes
                 </label>
                 
-                <button class="btn btn-primario" style="width:100%;" onclick="processarUploadArquivo()">Processar Arquivo</button>
+                <button class="btn btn-primario" style="width:100%;" onclick="processarUploadArquivo()">Subir para o Firebase</button>
             </div>
         </div>
     </div>
@@ -497,7 +501,7 @@
         </div>
     </div>
 
-    <!-- AUDITORIA RÁPIDA (Scanner Livre ou Botão Direto) -->
+    <!-- AUDITORIA RÁPIDA -->
     <div class="modal-overlay" id="modalAuditoriaRapida">
         <div class="modal-content">
             <div class="modal-header">
@@ -708,23 +712,36 @@
     <div class="area-exclusiva-qr-print" id="qrPrintTarget"></div>
 
     <script>
-        // 🚨 CONFIGURAÇÃO DE NUVEM 🚨
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyXgIji5tQcM7LpSLrwOEb4ON8eGaGJR3nM7_L68nA-LLVISJFFx7OW3vOx8tSAJSNo/exec";
+        // 🚀 INICIALIZANDO O MOTOR DO FIREBASE (NOVO BANCO DE DADOS) 🚀
+        const firebaseConfig = {
+          apiKey: "AIzaSyDjxw2G_3G4T26ljKhKMxLxv8fSYmvuQfs",
+          authDomain: "tecservice-8ce6b.firebaseapp.com",
+          projectId: "tecservice-8ce6b",
+          storageBucket: "tecservice-8ce6b.firebasestorage.app",
+          messagingSenderId: "1045184270613",
+          appId: "1:1045184270613:web:90fc95e4df1e8e8e2e991c"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        
+        // Ativando Cache Offline do Firebase (Permite usar no estoque sem Wi-Fi)
+        db.enablePersistence({synchronizeTabs:true}).catch(function(err) {
+            console.log("Aviso de Cache Offline do Firebase:", err);
+        });
 
+        // 🟢 VARIÁVEIS GLOBAIS DA APLICAÇÃO 🟢
         let dbItems = []; let dbLocais = []; let dbCategoriasComplexas = []; 
         let dbUnidades = []; let dbFornecedores = []; let dbHistorico = []; 
         let dbPerfisAcesso = []; let dbAuditorias = []; 
-        let bloqueioSincronismoDeEscrita = false;
+        
         let perfilAutenticadoGlobal = null; 
         let filtroFiltroEstoque = 'todos';
         let html5QrcodeScanner = null; 
         let objQrCode = null;
-        let loopSincronismo = null;
         let emAuditoria = false;
-
         let rotaLocaisAProcessar = []; let rotaIndiceAtual = 0; let logAuditoriaSessao = [];
 
-        // 🟢 --- ARQUITETURA DE INICIALIZAÇÃO BLINDADA COM CHAVE MESTRE DE EMERGÊNCIA --- 🟢
+        // 🛡️ MEMÓRIA LOCAL (Mantida por segurança enquanto o Firebase não carrega a tela)
         function carregarBancoLocal() {
             dbItems = JSON.parse(localStorage.getItem('tec_items')) || [];
             dbLocais = JSON.parse(localStorage.getItem('tec_locais')) || [];
@@ -735,12 +752,7 @@
             dbAuditorias = JSON.parse(localStorage.getItem('tec_auditorias')) || [];
             
             const perfisSalvos = JSON.parse(localStorage.getItem('tec_perfis'));
-            
-            let listaPerfisBase = (perfisSalvos && perfisSalvos.length > 0) ? perfisSalvos : [];
-            if (!listaPerfisBase.some(p => String(p.pin) === "1111")) {
-                listaPerfisBase.push({ nome: "ADMINISTRATIVO", pin: "1111", master: true, categorias:[], permissoes:{criar:true, editar:true, deletar:true} });
-            }
-            dbPerfisAcesso = listaPerfisBase;
+            dbPerfisAcesso = (perfisSalvos && perfisSalvos.length > 0) ? perfisSalvos : [{ nome: "ADMINISTRATIVO", pin: "1111", master: true, categorias:[], permissoes:{criar:true, editar:true, deletar:true} }];
         }
 
         function atualizarInterfaceCompleta() {
@@ -755,48 +767,80 @@
             renderConfiguracoes();
         }
 
+        // 🚀 O NOVO "CÉREBRO" DE SINCRONIZAÇÃO EM TEMPO REAL 🚀
+        function iniciarTempoReal() {
+            let primeiroCarregamentoConfig = true;
+            
+            // Fica "escutando" as configurações (Categorias, Locais, Perfis)
+            db.collection("tec_config").doc("geral").onSnapshot((doc) => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    dbLocais = data.locais || [];
+                    dbCategoriasComplexas = data.categorias || [{nome: "Geral", cor:"#00439c"}];
+                    dbUnidades = data.unidades || ["un", "cx"];
+                    dbFornecedores = data.fornecedores || [];
+                    dbHistorico = data.historico || [];
+                    dbAuditorias = data.auditorias || [];
+                    dbPerfisAcesso = (data.perfis && data.perfis.length > 0) ? data.perfis : [{ nome: "ADMINISTRATIVO", pin: "1111", master: true, categorias:[], permissoes:{criar:true, editar:true, deletar:true} }];
+                    
+                    if(perfilAutenticadoGlobal) atualizarInterfaceCompleta();
+                } else if (primeiroCarregamentoConfig) {
+                    // Mágica 1: Se o Firebase está vazio, sobe as configurações do seu PC pra lá automaticamente!
+                    salvarConfigNaNuvem();
+                }
+                primeiroCarregamentoConfig = false;
+            });
+
+            let primeiroCarregamentoItems = true;
+            // Fica "escutando" os produtos individualmente
+            db.collection("tec_items").onSnapshot((snapshot) => {
+                if (snapshot.empty && primeiroCarregamentoItems && dbItems.length > 0) {
+                    // Mágica 2: Se o Firebase não tem itens, sobe todo o seu estoque local automaticamente!
+                    console.log("Migrando produtos para o Firebase...");
+                    let batch = db.batch();
+                    let count = 0;
+                    dbItems.forEach(item => {
+                        batch.set(db.collection("tec_items").doc(String(item.id)), item);
+                        count++;
+                        if(count === 490) { batch.commit(); batch = db.batch(); count = 0; }
+                    });
+                    if(count > 0) batch.commit();
+                } else {
+                    let novosItems = [];
+                    snapshot.forEach((doc) => { novosItems.push(doc.data()); });
+                    dbItems = novosItems;
+                    localStorage.setItem('tec_items', JSON.stringify(dbItems));
+                    if(perfilAutenticadoGlobal) renderEstoque();
+                }
+                primeiroCarregamentoItems = false;
+            });
+        }
+
+        // 📤 SALVA APENAS CONFIGURAÇÕES (O Firebase salva itens separado)
+        function salvarConfigNaNuvem() {
+            localStorage.setItem('tec_locais', JSON.stringify(dbLocais));
+            localStorage.setItem('tec_cat_complexas', JSON.stringify(dbCategoriasComplexas));
+            localStorage.setItem('tec_unidades', JSON.stringify(dbUnidades));
+            localStorage.setItem('tec_fornecedores', JSON.stringify(dbFornecedores));
+            localStorage.setItem('tec_historico', JSON.stringify(dbHistorico));
+            localStorage.setItem('tec_auditorias', JSON.stringify(dbAuditorias));
+            localStorage.setItem('tec_perfis', JSON.stringify(dbPerfisAcesso));
+
+            db.collection("tec_config").doc("geral").set({
+                locais: dbLocais,
+                categorias: dbCategoriasComplexas,
+                unidades: dbUnidades,
+                fornecedores: dbFornecedores,
+                historico: dbHistorico,
+                auditorias: dbAuditorias,
+                perfis: dbPerfisAcesso
+            }, {merge: true});
+        }
+
         async function iniciarAplicativo() {
             carregarBancoLocal();
-            sincronizarLocaisAntigos();
             verificarSessaoSalva();
-
-            if (GOOGLE_SCRIPT_URL !== "SUA_URL_DO_GOOGLE_SCRIPT_AQUI") {
-                try {
-                    const res = await fetch(GOOGLE_SCRIPT_URL);
-                    const data = await res.json();
-                    
-                    if (data && Array.isArray(data.items)) {
-                        if (data.items.length === 0 && dbItems.length > 0) {
-                            salvarDadosNaNuvem();
-                        } else {
-                            dbItems = data.items;
-                            dbLocais = data.locais || [];
-                            dbCategoriasComplexas = data.categories || [{nome: "Geral", cor:"#00439c"}];
-                            dbUnidades = data.units || ["un"];
-                            dbFornecedores = data.suppliers || [];
-                            dbHistorico = data.history || [];
-                            dbAuditorias = data.auditorias || [];
-                            
-                            if (data.profiles && data.profiles.length > 0) {
-                                dbPerfisAcesso = data.profiles;
-                                if (!dbPerfisAcesso.some(p => String(p.pin) === "1111")) {
-                                    dbPerfisAcesso.push({ nome: "ADMINISTRATIVO", pin: "1111", master: true, categorias:[], permissoes:{criar:true, editar:true, deletar:true} });
-                                }
-                            }
-                            
-                            sincronizarLocaisAntigos();
-                            salvarDadosNaNuvem(); 
-                            
-                            if (perfilAutenticadoGlobal) {
-                                atualizarInterfaceCompleta();
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.log("Modo Offline Ativo. Nuvem indisponível.");
-                }
-            }
-            iniciarTempoReal();
+            iniciarTempoReal(); // O Firebase assume o controle a partir daqui
         }
 
         function sincronizarLocaisAntigos() {
@@ -813,57 +857,12 @@
                     }
                 }
             });
-            if(locaisAlterados && GOOGLE_SCRIPT_URL !== "SUA_URL_DO_GOOGLE_SCRIPT_AQUI") salvarDadosNaNuvem();
+            if(locaisAlterados) salvarConfigNaNuvem();
         }
 
-        async function salvarDadosNaNuvem() {
-            try {
-                localStorage.setItem('tec_items', JSON.stringify(dbItems));
-                localStorage.setItem('tec_locais', JSON.stringify(dbLocais));
-                localStorage.setItem('tec_cat_complexas', JSON.stringify(dbCategoriasComplexas));
-                localStorage.setItem('tec_unidades', JSON.stringify(dbUnidades));
-                localStorage.setItem('tec_fornecedores', JSON.stringify(dbFornecedores));
-                localStorage.setItem('tec_historico', JSON.stringify(dbHistorico));
-                localStorage.setItem('tec_auditorias', JSON.stringify(dbAuditorias));
-                localStorage.setItem('tec_perfis', JSON.stringify(dbPerfisAcesso));
-            } catch (err) {
-                console.error("Erro Crítico ao Salvar:", err);
-                alert("⚠️ ATENÇÃO: O limite de memória offline do seu navegador estourou! Delete produtos com fotos muito pesadas.");
-            }
-
-            if (GOOGLE_SCRIPT_URL === "SUA_URL_DO_GOOGLE_SCRIPT_AQUI") return;
-            
-            // 🛡️ ESCUDO ANTI-FANTASMA: Bloqueia a leitura da nuvem para dar tempo do Google Sheets pensar
-            bloqueioSincronismoDeEscrita = true;
-            
-            const payload = { items: dbItems, locais: dbLocais, categories: dbCategoriasComplexas, units: dbUnidades, suppliers: dbFornecedores, history: dbHistorico, auditorias: dbAuditorias, profiles: dbPerfisAcesso };
-            try { await fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }); } catch (e) {}
-
-            // Libera a leitura da nuvem 5 segundos depois da ação
-            setTimeout(() => { bloqueioSincronismoDeEscrita = false; }, 5000);
-        }
-
-        async function sincronismoSilencioso() {
-            // Se tiver tela aberta ou escudo de escrita ativo, ignora a busca!
-            if (emAuditoria || document.querySelector('.modal-overlay.active') || bloqueioSincronismoDeEscrita) return;
-            
-            if (GOOGLE_SCRIPT_URL === "SUA_URL_DO_GOOGLE_SCRIPT_AQUI") return;
-            try {
-                const res = await fetch(GOOGLE_SCRIPT_URL); const data = await res.json();
-                if (data && Array.isArray(data.items)) {
-                    if (data.items.length === 0 && dbItems.length > 0) return;
-                    if (JSON.stringify(dbItems) !== JSON.stringify(data.items)) {
-                        dbItems = data.items; dbLocais = data.locais || dbLocais; dbAuditorias = data.auditorias || dbAuditorias;
-                        sincronizarLocaisAntigos();
-                        atualizarInterfaceCompleta();
-                    }
-                }
-            } catch (e) {}
-        }
-        function iniciarTempoReal() { loopSincronismo = setInterval(sincronismoSilencioso, 10000); }
         function obterIconeAutomatico(nome) { const n = nome ? String(nome).toLowerCase() : ''; if(n.includes('papel') || n.includes('caderno') || n.includes('caneta')) return '📄'; if(n.includes('contatora')||n.includes('fio') || n.includes('led') || n.includes('lâmpada')) return '⚡'; if(n.includes('detergente')||n.includes('sabão')) return '🧼'; return '📦'; }
 
-        // --- MÁQUINA DO TEMPO: EXPORTAÇÃO E RESTAURAÇÃO ---
+        // --- EXPORTAÇÃO E IMPORTAÇÃO ---
         function abrirModalIntegracao() { document.getElementById('modalIntegracao').classList.add('active'); document.getElementById('uploadBackupInput').value = ''; document.getElementById('chkSubstituirEstoque').checked = false; }
         
         function exportarEstoqueCSV() {
@@ -887,21 +886,33 @@
             const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `backup_completo_tecservice_${new Date().getTime()}.json`; link.click();
         }
 
-        function processarUploadArquivo() {
+        async function subirItensParaFirestore(itensArray) {
+            let batch = db.batch();
+            let count = 0;
+            for (let item of itensArray) {
+                batch.set(db.collection("tec_items").doc(String(item.id)), item);
+                count++;
+                if (count === 490) { await batch.commit(); batch = db.batch(); count = 0; }
+            }
+            if (count > 0) await batch.commit();
+        }
+
+        async function processarUploadArquivo() {
             const input = document.getElementById('uploadBackupInput');
             if(!input.files || input.files.length === 0) return alert("Selecione o arquivo CSV, XML ou JSON primeiro.");
             
             const file = input.files[0];
             const substituir = document.getElementById('chkSubstituirEstoque').checked;
             
-            if(substituir && !confirm("⚠️ MODO RESTAURAÇÃO: Isso vai apagar o estoque da tela e voltar para os dados exatos deste arquivo. Tem certeza?")) return;
+            if(substituir && !confirm("⚠️ MODO RESTAURAÇÃO: Isso vai mesclar e sobrescrever os dados na nuvem do Firebase. Tem certeza?")) return;
 
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 const conteudo = e.target.result;
                 const extensao = file.name.split('.').pop().toLowerCase();
                 
                 try {
+                    let novosItens = [];
                     if (extensao === 'json') {
                         const dados = JSON.parse(conteudo);
                         if(substituir) {
@@ -912,12 +923,11 @@
                             if(dados.fornecedores) dbFornecedores = dados.fornecedores;
                             if(dados.profiles) dbPerfisAcesso = dados.profiles;
                         } else {
-                            if(dados.items) dbItems = dbItems.concat(dados.items);
+                            if(dados.items) novosItens = dados.items;
                         }
                     } 
                     else if (extensao === 'csv') {
                         const linhas = conteudo.split('\n');
-                        let novosItens = [];
                         for(let i = 1; i < linhas.length; i++) {
                             if(!linhas[i].trim()) continue;
                             const colunas = linhas[i].split(';');
@@ -941,7 +951,6 @@
                         const parser = new DOMParser();
                         const xmlDoc = parser.parseFromString(conteudo, "text/xml");
                         const itensNodes = xmlDoc.getElementsByTagName("item");
-                        let novosItens = [];
                         for (let i = 0; i < itensNodes.length; i++) {
                             const node = itensNodes[i];
                             const getVal = (tag) => node.getElementsByTagName(tag)[0]?.textContent || '';
@@ -963,11 +972,17 @@
                     }
 
                     sincronizarLocaisAntigos();
+                    salvarConfigNaNuvem();
                     atualizarInterfaceCompleta();
-                    salvarDadosNaNuvem();
                     fecharModal('modalIntegracao');
-                    alert("✅ Sistema atualizado com os dados do arquivo com sucesso!");
+                    alert("✅ Processando... Os arquivos estão subindo para a nuvem em lote.");
                     
+                    if(substituir) {
+                        await subirItensParaFirestore(dbItems);
+                    } else {
+                        await subirItensParaFirestore(novosItens);
+                    }
+
                 } catch (error) {
                     console.error(error);
                     alert("❌ Erro ao ler o arquivo. Ele pode estar corrompido.");
@@ -1005,10 +1020,19 @@
             }
         }
         function salvarPassoRotaAuditoria() {
+            let batch = db.batch();
             document.querySelectorAll('.auditoria-input-rota').forEach(input => {
                 const idItem = input.getAttribute('data-id'); const oldVal = parseInt(input.getAttribute('data-old')); const novaQtd = parseInt(input.value);
-                if (oldVal !== novaQtd) { const itemRef = dbItems.find(i => String(i.id).trim() === String(idItem).trim()); if(itemRef) { itemRef.atual = novaQtd; logAuditoriaSessao.push({ nome: itemRef.nome, de: oldVal, para: novaQtd, local: itemRef.localizacao }); } }
+                if (oldVal !== novaQtd) { 
+                    const itemRef = dbItems.find(i => String(i.id).trim() === String(idItem).trim()); 
+                    if(itemRef) { 
+                        itemRef.atual = novaQtd; 
+                        logAuditoriaSessao.push({ nome: itemRef.nome, de: oldVal, para: novaQtd, local: itemRef.localizacao }); 
+                        batch.update(db.collection("tec_items").doc(String(idItem).trim()), { atual: novaQtd });
+                    } 
+                }
             });
+            batch.commit();
             rotaIndiceAtual++; carregarPassoAuditoria();
         }
         function voltarPassoRotaAuditoria() { if (rotaIndiceAtual > 0) { rotaIndiceAtual--; carregarPassoAuditoria(); } }
@@ -1021,7 +1045,7 @@
         function concluirSessaoAuditoriaCompleta() {
             document.getElementById('modalRotaAuditoria').classList.remove('active'); emAuditoria = false; document.body.classList.remove('in-audit');
             if (logAuditoriaSessao.length > 0) { dbAuditorias.push({ id: Date.now(), data: new Date().toISOString(), log: logAuditoriaSessao }); alert(`✅ Auditoria finalizada. ${logAuditoriaSessao.length} correções registradas no Log.`); } else { alert("✅ Auditoria finalizada. Nenhuma divergência de estoque foi encontrada!"); }
-            atualizarInterfaceCompleta(); salvarDadosNaNuvem();
+            atualizarInterfaceCompleta(); salvarConfigNaNuvem();
         }
 
         // --- HISTÓRICO E LOGS ---
@@ -1145,9 +1169,9 @@
             setTimeout(() => { document.body.className = 'light'; }, 500); 
         }
 
-        // 🟢 REGRA DE EXCLUSÃO ESTABELECIDA NA FUNÇÃO DE RENDERIZAÇÃO E PROTEÇÕES 🟢
+        // 🟢 RENDERIZAÇÃO ESTOQUE 🟢
         function renderEstoque() {
-            if(!Array.isArray(dbItems)) dbItems = []; // Proteção extra anti-crash
+            if(!Array.isArray(dbItems)) dbItems = [];
             const searchInput = document.getElementById('searchInput');
             const termoBusca = searchInput ? searchInput.value.toLowerCase() : ''; 
             const containerFiltros = document.getElementById('filtrosContainer'); 
@@ -1188,7 +1212,6 @@
                 if(filtroFiltroEstoque !== 'todos' && filtroFiltroEstoque !== 'criticos' && item.categoria !== filtroFiltroEstoque) return;
                 
                 if(termoBusca) { 
-                    // 🛡️ PROTEÇÃO: Convertendo tudo para String antes de pesquisar (Anti-Crash)
                     const match = (item.nome && String(item.nome).toLowerCase().includes(termoBusca)) || 
                                   (item.codigo && String(item.codigo).toLowerCase().includes(termoBusca)) || 
                                   (item.marca && String(item.marca).toLowerCase().includes(termoBusca)) || 
@@ -1282,17 +1305,27 @@
             const nome = document.getElementById('locNome').value.trim(); if(!nome) return alert("Digite um nome para o local.");
             if(dbLocais.find(l => String(l.nome).toLowerCase() === nome.toLowerCase())) return alert("Este local já existe.");
             dbLocais.push({ id: "LOC-" + Date.now().toString(), nome: nome, tipo: document.getElementById('locTipo').value });
-            fecharModal('modalLocalOverlay'); atualizarInterfaceCompleta(); salvarDadosNaNuvem();
+            fecharModal('modalLocalOverlay'); atualizarInterfaceCompleta(); salvarConfigNaNuvem();
         }
         function salvarLocalInline() {
             const nome = document.getElementById('newLocalNome').value.trim(); if(!nome) return;
             if(!dbLocais.find(l => String(l.nome).toLowerCase() === nome.toLowerCase())) dbLocais.push({ id: "LOC-" + Date.now().toString(), nome: nome, tipo: "Caixa" });
-            popularCombosFormularios(); document.getElementById('formLocalizacao').value = nome; toggleSubForm('inlineLocal'); salvarDadosNaNuvem();
+            popularCombosFormularios(); document.getElementById('formLocalizacao').value = nome; toggleSubForm('inlineLocal'); salvarConfigNaNuvem();
         }
         function deletarLocal(id) { 
             if(confirm("Confirmar exclusão desta Caixa/Prateleira? (Os itens não serão apagados, apenas ficarão sem local).")) { 
-                const loc = dbLocais.find(l => String(l.id) === String(id)); if(loc) { dbItems.forEach(i => { if(String(i.localizacao) === String(loc.nome)) i.localizacao = ''; }); } 
-                dbLocais = dbLocais.filter(l => String(l.id) !== String(id)); atualizarInterfaceCompleta(); salvarDadosNaNuvem(); 
+                const loc = dbLocais.find(l => String(l.id) === String(id)); 
+                if(loc) { 
+                    let batch = db.batch();
+                    dbItems.forEach(i => { 
+                        if(String(i.localizacao) === String(loc.nome)) {
+                            i.localizacao = ''; 
+                            batch.update(db.collection("tec_items").doc(String(i.id)), { localizacao: '' });
+                        }
+                    }); 
+                    batch.commit();
+                } 
+                dbLocais = dbLocais.filter(l => String(l.id) !== String(id)); atualizarInterfaceCompleta(); salvarConfigNaNuvem(); 
             } 
         }
 
@@ -1347,9 +1380,20 @@
         }
         function salvarAuditoria() {
             let alterados = 0; logAuditoriaSessao = [];
-            document.querySelectorAll('.auditoria-input').forEach(input => { const idItem = input.getAttribute('data-id'); const novaQtd = parseInt(input.value); const itemRef = dbItems.find(i => String(i.id) === String(idItem)); if (itemRef && itemRef.atual !== novaQtd) { logAuditoriaSessao.push({ nome: itemRef.nome, de: itemRef.atual, para: novaQtd, local: itemRef.localizacao }); itemRef.atual = novaQtd; alterados++; } });
+            let batch = db.batch();
+            document.querySelectorAll('.auditoria-input').forEach(input => { 
+                const idItem = input.getAttribute('data-id'); const novaQtd = parseInt(input.value); 
+                const itemRef = dbItems.find(i => String(i.id) === String(idItem)); 
+                if (itemRef && itemRef.atual !== novaQtd) { 
+                    logAuditoriaSessao.push({ nome: itemRef.nome, de: itemRef.atual, para: novaQtd, local: itemRef.localizacao }); 
+                    itemRef.atual = novaQtd; 
+                    alterados++; 
+                    batch.update(db.collection("tec_items").doc(String(idItem)), { atual: novaQtd });
+                } 
+            });
+            batch.commit();
             fecharModal('modalAuditoriaRapida'); atualizarInterfaceCompleta();
-            if(!emAuditoria) { if(alterados > 0) { dbAuditorias.push({ id: Date.now(), data: new Date().toISOString(), log: logAuditoriaSessao }); salvarDadosNaNuvem(); alert(`✅ Estoque atualizado! (${alterados} itens alterados)`); } }
+            if(!emAuditoria) { if(alterados > 0) { dbAuditorias.push({ id: Date.now(), data: new Date().toISOString(), log: logAuditoriaSessao }); salvarConfigNaNuvem(); alert(`✅ Estoque atualizado! (${alterados} itens alterados)`); } }
         }
 
         // --- 🟢 AUTENTICAÇÃO E SESSÃO ---
@@ -1374,9 +1418,6 @@
                 if(isManual || !document.querySelector('.view-pane.active')) {
                     navegar('estoque'); 
                 }
-                
-                if(loopSincronismo) clearInterval(loopSincronismo);
-                iniciarTempoReal(); 
                 return true;
             } else { 
                 if (isManual) {
@@ -1416,22 +1457,50 @@
             location.reload(); 
         }
 
-        function alternarCheckboxItem(id) { const item = dbItems.find(m => String(m.id) === String(id)); if(item) { item.checked = !item.checked; atualizarInterfaceCompleta(); salvarDadosNaNuvem(); } }
+        function alternarCheckboxItem(id) { 
+            const item = dbItems.find(m => String(m.id) === String(id)); 
+            if(item) { 
+                item.checked = !item.checked; 
+                db.collection("tec_items").doc(String(id)).update({ checked: item.checked });
+                atualizarInterfaceCompleta(); 
+            } 
+        }
+
         function filtrarPainelEstoque(alvo) { filtroFiltroEstoque = alvo; renderEstoque(); }
 
         function abrirModalItem() { document.getElementById('modalItemOverlay').classList.add('active'); popularCombosFormularios(); document.getElementById('formId').value = ''; document.getElementById('formCodigo').value = ''; document.getElementById('formMarca').value = ''; document.getElementById('formNome').value = ''; document.getElementById('formLocalizacao').value = ''; document.getElementById('formPreco').value = ''; document.getElementById('formAtual').value = ''; document.getElementById('formMinimo').value = ''; document.getElementById('formFotoBase64').value = ''; }
+        
         function editarItem(id) { const item = dbItems.find(m => String(m.id) === String(id)); if(item) { abrirModalItem(); document.getElementById('formId').value = item.id; document.getElementById('formCodigo').value = item.codigo || ''; document.getElementById('formMarca').value = item.marca || ''; document.getElementById('formNome').value = item.nome; document.getElementById('formLocalizacao').value = item.localizacao || ''; document.getElementById('formCategoria').value = item.categoria; document.getElementById('formUnidade').value = item.unidade; document.getElementById('formFornecedor').value = item.fornecedor || 'Nenhum'; document.getElementById('formPreco').value = item.preco; document.getElementById('formAtual').value = item.atual; document.getElementById('formMinimo').value = item.minimo; document.getElementById('formFotoBase64').value = item.foto || ''; } }
+        
+        // 🚀 SALVAMENTO INDIVIDUAL NO FIREBASE
         function salvarItem() {
             const id = document.getElementById('formId').value; const codigo = document.getElementById('formCodigo').value.trim(); const colMarca = document.getElementById('formMarca').value.trim(); const nome = document.getElementById('formNome').value.trim(); const localizacao = document.getElementById('formLocalizacao').value.trim(); const categoria = document.getElementById('formCategoria').value; const unidade = document.getElementById('formUnidade').value; const forn = document.getElementById('formFornecedor').value; const preco = parseFloat(document.getElementById('formPreco').value) || 0; const atual = parseInt(document.getElementById('formAtual').value) || 0; const minimo = parseInt(document.getElementById('formMinimo').value) || 0; const foto = document.getElementById('formFotoBase64').value;
+            
             if(!nome) return alert("Nome inválido!");
-            if(id) { const item = dbItems.find(m => String(m.id) === String(id)); if(item) { Object.assign(item, { codigo, marca: colMarca, nome, localizacao, categoria, unidade, fornecedor: forn, preco, atual, minimo }); if(foto) item.foto = foto; } } else { dbItems.push({ id: "ATV-" + Date.now().toString(), codigo, marca: colMarca, nome, localizacao, categoria, unidade, fornecedor: forn, preco, atual, minimo, checked: false, foto }); }
-            fecharModal('modalItemOverlay'); atualizarInterfaceCompleta(); salvarDadosNaNuvem();
+            
+            let payloadItem = { codigo, marca: colMarca, nome, localizacao, categoria, unidade, fornecedor: forn, preco, atual, minimo, foto };
+
+            if(id) { 
+                const item = dbItems.find(m => String(m.id) === String(id)); 
+                if(item) { 
+                    Object.assign(item, payloadItem); 
+                    db.collection("tec_items").doc(String(id)).set(item); // Envia só essa caixa pro firebase
+                } 
+            } else { 
+                const newId = "ATV-" + Date.now().toString() + Math.floor(Math.random()*1000);
+                payloadItem.id = newId;
+                payloadItem.checked = false;
+                dbItems.push(payloadItem); 
+                db.collection("tec_items").doc(newId).set(payloadItem); // Cria documento novo
+            }
+            fecharModal('modalItemOverlay'); atualizarInterfaceCompleta();
         }
+
         function deletarItem(id) { 
             if(confirm("Confirmar exclusão definitiva deste ativo?")) { 
                 dbItems = dbItems.filter(m => String(m.id).trim() !== String(id).trim()); 
+                db.collection("tec_items").doc(String(id).trim()).delete(); // Exclui do Firebase
                 atualizarInterfaceCompleta(); 
-                salvarDadosNaNuvem(); 
             } 
         }
 
@@ -1470,29 +1539,21 @@
 
         function toggleSubForm(id) { const f = document.getElementById(id); f.style.display = f.style.display === 'flex' ? 'none' : 'flex'; }
         
-        function salvarCategoriaInline() { const nome = document.getElementById('inlineCatNome').value.trim(); const colCor = document.getElementById('inlineCatCor').value; if(!nome) return; if(!dbCategoriasComplexas.some(c => String(c.nome).toLowerCase() === String(nome).toLowerCase())) { dbCategoriasComplexas.push({ nome, cor: colCor }); document.getElementById('inlineCatNome').value = ''; document.getElementById('inlineFormCategoria').style.display = 'none'; popularCombosFormularios(); renderConfiguracoes(); atualizarInterfaceCompleta(); salvarDadosNaNuvem(); } }
-        function salvarUnidadeInline() { const nome = document.getElementById('inlineUnidadeNome').value.trim(); if(!nome) return; if(!dbUnidades.includes(nome)) { dbUnidades.push(nome); document.getElementById('inlineUnidadeNome').value = ''; document.getElementById('inlineFormUnidade').style.display = 'none'; popularCombosFormularios(); renderConfiguracoes(); atualizarInterfaceCompleta(); salvarDadosNaNuvem(); } }
-        function salvarFornecedorInline() { const nome = document.getElementById('inlineFornNome').value.trim(); if(!nome) return; if(!dbFornecedores.some(f => String(f.nome).toLowerCase() === String(nome).toLowerCase())) { dbFornecedores.push({ nome, tel: 'N/I', email: 'N/I' }); document.getElementById('inlineFornNome').value = ''; document.getElementById('inlineFormFornecedor').style.display = 'none'; popularCombosFormularios(); renderConfiguracoes(); atualizarInterfaceCompleta(); salvarDadosNaNuvem(); } }
+        function salvarCategoriaInline() { const nome = document.getElementById('inlineCatNome').value.trim(); const colCor = document.getElementById('inlineCatCor').value; if(!nome) return; if(!dbCategoriasComplexas.some(c => String(c.nome).toLowerCase() === String(nome).toLowerCase())) { dbCategoriasComplexas.push({ nome, cor: colCor }); document.getElementById('inlineCatNome').value = ''; document.getElementById('inlineFormCategoria').style.display = 'none'; popularCombosFormularios(); renderConfiguracoes(); atualizarInterfaceCompleta(); salvarConfigNaNuvem(); } }
+        function salvarUnidadeInline() { const nome = document.getElementById('inlineUnidadeNome').value.trim(); if(!nome) return; if(!dbUnidades.includes(nome)) { dbUnidades.push(nome); document.getElementById('inlineUnidadeNome').value = ''; document.getElementById('inlineFormUnidade').style.display = 'none'; popularCombosFormularios(); renderConfiguracoes(); atualizarInterfaceCompleta(); salvarConfigNaNuvem(); } }
+        function salvarFornecedorInline() { const nome = document.getElementById('inlineFornNome').value.trim(); if(!nome) return; if(!dbFornecedores.some(f => String(f.nome).toLowerCase() === String(nome).toLowerCase())) { dbFornecedores.push({ nome, tel: 'N/I', email: 'N/I' }); document.getElementById('inlineFornNome').value = ''; document.getElementById('inlineFormFornecedor').style.display = 'none'; popularCombosFormularios(); renderConfiguracoes(); atualizarInterfaceCompleta(); salvarConfigNaNuvem(); } }
 
         function popularCombosFormularios() {
             const selCat = document.getElementById('formCategoria'); const selUn = document.getElementById('formUnidade'); const selForn = document.getElementById('formFornecedor'); const selLoc = document.getElementById('formLocalizacao');
             
-            // 🛡️ MEMÓRIA DE PREENCHIMENTO: Salva o que você já selecionou antes de atualizar a lista
-            const valCat = selCat ? selCat.value : '';
-            const valUn = selUn ? selUn.value : '';
-            const valForn = selForn ? selForn.value : '';
-            const valLoc = selLoc ? selLoc.value : '';
+            const valCat = selCat ? selCat.value : ''; const valUn = selUn ? selUn.value : ''; const valForn = selForn ? selForn.value : ''; const valLoc = selLoc ? selLoc.value : '';
 
             if(selCat) { selCat.innerHTML = ''; (dbCategoriasComplexas||[]).forEach(c => selCat.innerHTML += `<option value="${c.nome}">${c.nome}</option>`); }
             if(selUn) { selUn.innerHTML = ''; (dbUnidades||[]).forEach(u => selUn.innerHTML += `<option value="${u}">${u}</option>`); }
             if(selForn) { selForn.innerHTML = '<option value="Nenhum">Nenhum Fornecedor</option>'; (dbFornecedores||[]).forEach(f => selForn.innerHTML += `<option value="${f.nome}">${f.nome}</option>`); }
             if(selLoc) { selLoc.innerHTML = '<option value="">(Localização Geral)</option>'; (dbLocais||[]).forEach(l => selLoc.innerHTML += `<option value="${l.nome}">${l.nome}</option>`); }
             
-            // 🛡️ DEVOLVE OS VALORES: Coloca de volta o que estava selecionado
-            if(selCat && valCat) selCat.value = valCat;
-            if(selUn && valUn) selUn.value = valUn;
-            if(selForn && valForn) selForn.value = valForn;
-            if(selLoc && valLoc) selLoc.value = valLoc;
+            if(selCat && valCat) selCat.value = valCat; if(selUn && valUn) selUn.value = valUn; if(selForn && valForn) selForn.value = valForn; if(selLoc && valLoc) selLoc.value = valLoc;
 
             const containerCheckboxesConfig = document.getElementById('configPerfilCategoriasChecklist'); 
             if(containerCheckboxesConfig) {
@@ -1509,7 +1570,7 @@
             if (!master) { document.querySelectorAll('.config-perfil-cat-checkbox-item').forEach(cb => { if(cb.checked) categoriasSelecionadas.push(cb.value); }); criar = document.getElementById('permCriar').checked; editar = document.getElementById('permEditar').checked; deletar = document.getElementById('permDeletar').checked; }
             const payloadPerfil = { nome, pin, master, categorias: categoriasSelecionadas, permissoes: { criar, editar, deletar } };
             if (indexEdicao !== "") dbPerfisAcesso[parseInt(indexEdicao)] = payloadPerfil; else dbPerfisAcesso.push(payloadPerfil);
-            cancelarEdicaoPerfil(); renderConfiguracoes(); salvarDadosNaNuvem();
+            cancelarEdicaoPerfil(); renderConfiguracoes(); salvarConfigNaNuvem();
         }
         function editarPerfilAcesso(idx) {
             const perfil = dbPerfisAcesso[idx]; document.getElementById('formPerfilIndex').value = idx; document.getElementById('addPerfilNome').value = perfil.nome; document.getElementById('addPerfilPin').value = perfil.pin; document.getElementById('addPerfilMasterToggle').checked = perfil.master; alternarEstadoPerfilMaster(document.getElementById('addPerfilMasterToggle'));
@@ -1537,14 +1598,14 @@
             (dbFornecedores||[]).forEach((f, idx) => { wrapperForn.innerHTML += `<div class="tag-row"><div><strong>${f.nome}</strong></div><button class="btn-icon" style="color:var(--red)" onclick="removerParametro('fornecedores', ${idx})">✕</button></div>`; });
         }
 
-        function removerParametro(tipo, idx) { if(tipo === 'categorias') dbCategoriasComplexas.splice(idx, 1); if(tipo === 'unidades') dbUnidades.splice(idx, 1); if(tipo === 'fornecedores') dbFornecedores.splice(idx, 1); if(tipo === 'perfis') dbPerfisAcesso.splice(idx, 1); popularCombosFormularios(); renderConfiguracoes(); atualizarInterfaceCompleta(); salvarDadosNaNuvem(); }
+        function removerParametro(tipo, idx) { if(tipo === 'categorias') dbCategoriasComplexas.splice(idx, 1); if(tipo === 'unidades') dbUnidades.splice(idx, 1); if(tipo === 'fornecedores') dbFornecedores.splice(idx, 1); if(tipo === 'perfis') dbPerfisAcesso.splice(idx, 1); popularCombosFormularios(); renderConfiguracoes(); atualizarInterfaceCompleta(); salvarConfigNaNuvem(); }
         function alternarTodasCategoriasFormPerfil(masterCheckbox) { document.querySelectorAll('.config-perfil-cat-checkbox-item').forEach(cb => cb.checked = masterCheckbox.checked); }
         function verificarStatusSelecaoMasterPerfil() { const master = document.getElementById('configPerfilSelectAllCatsTrigger'); if(!master) return; let todasMarcadas = true; document.querySelectorAll('.config-perfil-cat-checkbox-item').forEach(cb => { if (!cb.checked) todasMarcadas = false; }); master.checked = todasMarcadas; }
         function alternarEstadoPerfilMaster(chk) { const wrapperCats = document.getElementById('groupPerfilCategoriasWrapper'); const wrapperPerms = document.getElementById('groupPerfilPermissoesWrapper'); if (chk.checked) { wrapperCats.style.opacity = '0.4'; wrapperCats.style.pointerEvents = 'none'; wrapperPerms.style.opacity = '0.4'; wrapperPerms.style.pointerEvents = 'none'; } else { wrapperCats.style.opacity = '1'; wrapperCats.style.pointerEvents = 'auto'; wrapperPerms.style.opacity = '1'; wrapperPerms.style.pointerEvents = 'auto'; } }
 
         function abrirModalLancamento() { document.getElementById('modalLancamentoOverlay').classList.add('active'); const select = document.getElementById('lancamentoSelectMaterial'); select.innerHTML = ''; (dbItems||[]).forEach(i => select.innerHTML += `<option value="${i.nome}">${i.nome}</option>`); }
-        function salvarLancamento() { const nome = document.getElementById('lancamentoSelectMaterial').value; const qtd = parseInt(document.getElementById('lancamentoQtd').value) || 0; const valor = parseFloat(document.getElementById('lancamentoValor').value) || 0; const data = document.getElementById('lancamentoData').value; if(!nome || qtd <= 0 || valor <= 0 || !data) return alert("Parâmetros inconsistentes."); dbHistorico.push({ nome, qtd, valor, data }); fecharModal('modalLancamentoOverlay'); renderHistorico(); salvarDadosNaNuvem(); }
-        function deletarHistorico(idx) { if(confirm("Excluir registro?")) { dbHistorico.splice(idx, 1); renderHistorico(); salvarDadosNaNuvem(); } }
+        function salvarLancamento() { const nome = document.getElementById('lancamentoSelectMaterial').value; const qtd = parseInt(document.getElementById('lancamentoQtd').value) || 0; const valor = parseFloat(document.getElementById('lancamentoValor').value) || 0; const data = document.getElementById('lancamentoData').value; if(!nome || qtd <= 0 || valor <= 0 || !data) return alert("Parâmetros inconsistentes."); dbHistorico.push({ nome, qtd, valor, data }); fecharModal('modalLancamentoOverlay'); renderHistorico(); salvarConfigNaNuvem(); }
+        function deletarHistorico(idx) { if(confirm("Excluir registro?")) { dbHistorico.splice(idx, 1); renderHistorico(); salvarConfigNaNuvem(); } }
 
         function fecharModal(id) { document.getElementById(id).classList.remove('active'); }
 
@@ -1569,7 +1630,7 @@
             const novoTema = temaAtual === 'dark' ? 'light' : 'dark';
             
             document.body.setAttribute('data-theme', novoTema);
-            localStorage.setItem('tec_tema_preferido', novoTema); // Salva para sempre!
+            localStorage.setItem('tec_tema_preferido', novoTema);
 
             if(filtroFiltroEstoque === 'todos' || filtroFiltroEstoque === 'criticos') {
                 document.body.style.setProperty('--dinamica-categoria', novoTema === 'dark' ? 'rgba(56, 189, 248, 0.12)' : 'rgba(0, 67, 156, 0.25)'); 
@@ -1590,10 +1651,7 @@
             else if (alvo === 'config') { document.getElementById('paneConfig').classList.add('active'); document.getElementById('menuConfig').classList.add('active'); renderConfiguracoes(); } 
         }
 
-        // Carrega o tema salvo logo na leitura inicial do site
         carregarTemaSalvo();
-        
-        // 🟢 INICIA O APLICATIVO CORRETAMENTE
         iniciarAplicativo();
         
         if ('serviceWorker' in navigator) {
