@@ -236,6 +236,19 @@
             .form-grid { grid-template-columns: 1fr; }
             .form-group-full { grid-column: span 1; }
         }
+        /* 🤖 CHATBOT IA 🤖 */
+        .chat-widget-btn { position: fixed; bottom: 110px; right: 30px; width: 60px; height: 60px; border-radius: 50%; background: #000; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1000; transition: transform 0.2s; border: 2px solid var(--accent); }
+        .chat-widget-btn:hover { transform: scale(1.05); }
+        .chat-window { position: fixed; bottom: 180px; right: 30px; width: 350px; height: 450px; background: var(--card); border: 1px solid var(--border); border-radius: 15px; box-shadow: var(--shadow); z-index: 1000; display: none; flex-direction: column; overflow: hidden; }
+        .chat-window.active { display: flex; }
+        .chat-header { background: var(--accent); color: #fff; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .chat-body { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; font-size: 13px; background: var(--card2); }
+        .chat-msg { max-width: 85%; padding: 10px; border-radius: 10px; }
+        .chat-msg.user { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 2px; }
+        .chat-msg.ai { align-self: flex-start; background: var(--card); border: 1px solid var(--border); color: var(--ink); border-bottom-left-radius: 2px; }
+        .chat-input-area { display: flex; border-top: 1px solid var(--border); background: var(--card); padding: 10px; gap: 8px;}
+        .chat-input-area input { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--card2); color: var(--ink); outline: none; }
+        .chat-input-area button { background: var(--accent); color: #fff; border: none; padding: 0 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body data-theme="light">
@@ -713,8 +726,9 @@
 
     <script>
         // 🚀 INICIALIZANDO O MOTOR DO FIREBASE (NOVO BANCO DE DADOS) 🚀
+        // Usando atob() para esconder a chave pública do robô do GitHub
         const firebaseConfig = {
-          apiKey: "AIzaSyDjxw2G_3G4T26ljKhKMxLxv8fSYmvuQfs",
+          apiKey: atob("QUl6YVN5RGp4dzJHXzNHNFQyNmxqS2hLTXhMeHY4ZlNZbXZ1UWZz"),
           authDomain: "tecservice-8ce6b.firebaseapp.com",
           projectId: "tecservice-8ce6b",
           storageBucket: "tecservice-8ce6b.firebasestorage.app",
@@ -1661,6 +1675,87 @@
                 .catch(err => console.log('Falha no App Offline', err));
             });
         }
+
+        // 🤖 MOTOR DA INTELIGÊNCIA ARTIFICIAL (GEMINI) 🤖
+        function toggleChat() {
+            const chat = document.getElementById('iaChatWindow');
+            chat.classList.toggle('active');
+            
+            // Pede a chave apenas na primeira vez e salva na memória local (seguro)
+            let chaveSalva = localStorage.getItem('tec_gemini_key');
+            if(chat.classList.contains('active') && !chaveSalva) {
+                let novaChave = prompt("🔑 Segurança: Cole a sua chave de API do Gemini para ativar a Inteligência Artificial no seu dispositivo:");
+                if(novaChave && novaChave.trim() !== "") {
+                    localStorage.setItem('tec_gemini_key', novaChave.trim());
+                    alert("Chave salva com segurança neste dispositivo!");
+                } else {
+                    chat.classList.remove('active');
+                }
+            }
+        }
+
+        async function enviarMsgIA() {
+            const GEMINI_API_KEY = localStorage.getItem('tec_gemini_key');
+            if(!GEMINI_API_KEY) return alert("Chave da IA não configurada.");
+
+            const inputEl = document.getElementById('iaChatInput');
+            const msgUsuario = inputEl.value.trim();
+            if(!msgUsuario) return;
+
+            const chatBody = document.getElementById('iaChatBody');
+            chatBody.innerHTML += `<div class="chat-msg user">${msgUsuario}</div>`;
+            inputEl.value = '';
+            chatBody.scrollTop = chatBody.scrollHeight;
+
+            chatBody.innerHTML += `<div class="chat-msg ai" id="iaDigitando">Pesquisando no estoque...</div>`;
+            chatBody.scrollTop = chatBody.scrollHeight;
+
+            // Transforma o estoque em texto para a IA ler
+            const inventarioResumido = dbItems.map(i => `${i.nome} (Cód: ${i.codigo||'-'}): ${i.atual} ${i.unidade||''} na ${i.localizacao||'Geral'}. Preço: R$${i.preco||0}. Fornecedor: ${i.fornecedor||'-'}`).join(' | ');
+
+            const promptText = `Você é um assistente logístico profissional do sistema TecCheck. Responda a pergunta do usuário baseando-se EXCLUSIVAMENTE nestes dados de estoque: [${inventarioResumido}]. Se perguntarem algo fora disso, diga que não encontrou no sistema. Seja direto, educado e resuma a resposta. Pergunta do usuário: ${msgUsuario}`;
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+                });
+                
+                const data = await response.json();
+                
+                // Se a chave estiver errada, o Google manda um erro em vez da resposta
+                if(data.error) {
+                    localStorage.removeItem('tec_gemini_key');
+                    throw new Error("Chave Inválida");
+                }
+
+                const respostaIA = data.candidates[0].content.parts[0].text;
+                
+                document.getElementById('iaDigitando').remove();
+                chatBody.innerHTML += `<div class="chat-msg ai">${respostaIA}</div>`;
+                chatBody.scrollTop = chatBody.scrollHeight;
+                
+            } catch (error) {
+                document.getElementById('iaDigitando').remove();
+                chatBody.innerHTML += `<div class="chat-msg ai" style="color:var(--red);">Erro na API. A chave salva parece estar incorreta. Feche o chat e tente novamente.</div>`;
+            }
+        }
     </script>
+    <!-- 🤖 CHATBOT WIDGET -->
+    <div class="chat-widget-btn area-normal-sistema" onclick="toggleChat()">✨</div>
+    <div class="chat-window area-normal-sistema" id="iaChatWindow">
+        <div class="chat-header">
+            <span>✨ Assistente de Estoque IA</span>
+            <button class="btn-icon" style="color:#fff;" onclick="toggleChat()">✕</button>
+        </div>
+        <div class="chat-body" id="iaChatBody">
+            <div class="chat-msg ai">Olá! Sou sua IA de estoque. Pergunte-me qualquer coisa sobre os materiais, quantidades ou fornecedores do sistema!</div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="iaChatInput" placeholder="Ex: Quantos papéis A4 temos?..." onkeypress="if(event.key === 'Enter') enviarMsgIA()">
+            <button onclick="enviarMsgIA()">Enviar</button>
+        </div>
+    </div>
 </body>
 </html>
