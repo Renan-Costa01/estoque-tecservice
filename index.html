@@ -1675,7 +1675,7 @@
                 .catch(err => console.log('Falha no App Offline', err));
             });
         }       
-        // 🤖 MOTOR DA INTELIGÊNCIA ARTIFICIAL (GROQ / LLAMA 3.3 - MÁXIMA BLINDAGEM) 🤖
+        // 🤖 MOTOR DA IA COM AUTONOMIA TOTAL (SUPER-AGENTE DE ESTOQUE) 🤖
         const chaveInvertida = "VGzYyfrER35bryxH2BmKncyRYF3bydGW58jwcbaP6i4YfiD385ol_ksg"; 
         const GROQ_API_KEY = chaveInvertida.split('').reverse().join('');
         
@@ -1704,16 +1704,18 @@
             const locaisResumidos = dbLocais.map(l => `${l.nome} (${l.tipo})`).join(', ');
 
             const promptSistema = `Você é o assistente logístico super-agente do sistema TecCheck da TecService. 
-            Você tem AUTONOMIA TOTAL para alterar o banco de dados.
+            Você tem AUTONOMIA TOTAL para interagir com o banco de dados.
 
-            REGRAS DE AÇÃO (Insira os comandos ocultos na sua resposta para agir no sistema):
-            1. Criar Produto: [CMD_CRIAR_ITEM: Nome | Quantidade | Localização]
-            2. Atualizar Estoque (Fazer a conta final): [CMD_MUDAR_QTD: Nome Exato | Nova Quantidade Calculada]
+            MUITO IMPORTANTE - REGRAS DE AÇÃO:
+            Para executar uma ação real no sistema, você DEVE gerar os comandos abaixo no seu texto. Tente usar sempre o formato exato com colchetes.
+            
+            1. Criar Produto: [CMD_CRIAR_ITEM: Nome do Produto | Quantidade | Nome do Local]
+            2. Atualizar Estoque (Calcule o total antes): [CMD_MUDAR_QTD: Nome Exato do Produto | Quantidade Final]
             3. Renomear Produto: [CMD_RENOMEAR_ITEM: Nome Antigo | Nome Novo]
-            4. Criar Local (Caixa/Prateleira): [CMD_CRIAR_LOCAL: Nome do Local | Tipo] (Tipo deve ser "Caixa" ou "Prateleira")
+            4. Criar Local (Caixa/Prateleira): [CMD_CRIAR_LOCAL: Nome do Local | Tipo] (Tipo = "Caixa" ou "Prateleira")
             5. Mostrar QR Code: [CMD_QRCODE: Nome do Item ou Local]
 
-            Você pode executar vários comandos na mesma resposta. Seja amigável e depois execute os comandos de forma invisível.
+            Exemplo de como você deve agir: "Pode deixar, estou criando a caixa! [CMD_CRIAR_LOCAL: Caixa 50 | Caixa]"
             
             Dados atuais - Itens: [${inventarioResumido}]
             Dados atuais - Locais: [${locaisResumidos}]`;
@@ -1744,8 +1746,8 @@
                 
                 document.getElementById('iaDigitando').remove();
 
-                // ⚡ 1. MOTOR DE INTERCEPTAÇÃO: CRIAR ITEM
-                const regexCriarItem = /\[CMD_CRIAR_ITEM:\s*(.+?)\s*\|\s*(\d+)\s*\|\s*(.+?)\]/gi;
+                // ⚡ 1. MOTOR DE INTERCEPTAÇÃO: CRIAR ITEM (Agora mais inteligente e tolerante a falhas)
+                const regexCriarItem = /\[?CMD_CRIAR_ITEM:\s*([^|]+?)\s*\|\s*(\d+)\s*\|\s*([^\]\n<]+?)\]?/gi;
                 let match;
                 while ((match = regexCriarItem.exec(respostaIA)) !== null) {
                     const nomeItem = match[1].trim();
@@ -1762,7 +1764,7 @@
                 }
 
                 // ⚡ 2. MOTOR DE INTERCEPTAÇÃO: MUDAR QUANTIDADE
-                const regexMudarQtd = /\[CMD_MUDAR_QTD:\s*(.+?)\s*\|\s*(\d+)\]/gi;
+                const regexMudarQtd = /\[?CMD_MUDAR_QTD:\s*([^|]+?)\s*\|\s*(\d+)\]?/gi;
                 while ((match = regexMudarQtd.exec(respostaIA)) !== null) {
                     const nomeAlvo = match[1].trim();
                     const qtdFinal = parseInt(match[2]);
@@ -1778,7 +1780,7 @@
                 }
 
                 // ⚡ 3. MOTOR DE INTERCEPTAÇÃO: RENOMEAR ITEM
-                const regexRenomear = /\[CMD_RENOMEAR_ITEM:\s*(.+?)\s*\|\s*(.+?)\]/gi;
+                const regexRenomear = /\[?CMD_RENOMEAR_ITEM:\s*([^|]+?)\s*\|\s*([^\]\n<]+?)\]?/gi;
                 while ((match = regexRenomear.exec(respostaIA)) !== null) {
                     const nomeAntigo = match[1].trim();
                     const nomeNovo = match[2].trim();
@@ -1792,7 +1794,7 @@
                 }
 
                 // ⚡ 4. MOTOR DE INTERCEPTAÇÃO: CRIAR LOCAL (Caixa/Prateleira)
-                const regexCriarLocal = /\[CMD_CRIAR_LOCAL:\s*(.+?)\s*\|\s*(.+?)\]/gi;
+                const regexCriarLocal = /\[?CMD_CRIAR_LOCAL:\s*([^|]+?)\s*\|\s*([^\]\n<]+?)\]?/gi;
                 while ((match = regexCriarLocal.exec(respostaIA)) !== null) {
                     const nomeLoc = match[1].trim();
                     const tipoLoc = match[2].trim();
@@ -1807,7 +1809,7 @@
                 }
 
                 // ⚡ 5. MOTOR DE INTERCEPTAÇÃO: GERAR QR CODE NA TELA
-                const regexQR = /\[CMD_QRCODE:\s*(.+?)\]/gi;
+                const regexQR = /\[?CMD_QRCODE:\s*([^\]\n<]+?)\]?/gi;
                 while ((match = regexQR.exec(respostaIA)) !== null) {
                     const alvo = match[1].trim();
                     let qrData = alvo;
