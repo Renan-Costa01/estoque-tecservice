@@ -1675,7 +1675,7 @@
                 .catch(err => console.log('Falha no App Offline', err));
             });
         }       
-        // 🤖 MOTOR DA IA COM AUTONOMIA TOTAL (SUPER-AGENTE DE ESTOQUE) 🤖
+        // 🤖 MOTOR DA IA COM AUTONOMIA TOTAL (SUPER-AGENTE DE ESTOQUE V2) 🤖
         const chaveInvertida = "VGzYyfrER35bryxH2BmKncyRYF3bydGW58jwcbaP6i4YfiD385ol_ksg"; 
         const GROQ_API_KEY = chaveInvertida.split('').reverse().join('');
         
@@ -1696,27 +1696,28 @@
             inputEl.value = '';
             chatBody.scrollTop = chatBody.scrollHeight;
 
-            chatBody.innerHTML += `<div class="chat-msg ai" id="iaDigitando">Processando comandos no sistema...</div>`;
+            chatBody.innerHTML += `<div class="chat-msg ai" id="iaDigitando">Processando o sistema...</div>`;
             chatBody.scrollTop = chatBody.scrollHeight;
 
-            // Mapeando dados para a IA ter o contexto absoluto
-            const inventarioResumido = dbItems.map(i => `${i.nome} (ID: ${i.id}, Cód: ${i.codigo||'-'}): ${i.atual} ${i.unidade||'un'} na ${i.localizacao||'Geral'}`).join(' | ');
+            const inventarioResumido = dbItems.map(i => `${i.nome} (Cód: ${i.codigo||'-'}): ${i.atual} un | Preço: R$${(parseFloat(i.preco)||0).toFixed(2)} | Local: ${i.localizacao||'Geral'}`).join(' ; ');
             const locaisResumidos = dbLocais.map(l => `${l.nome} (${l.tipo})`).join(', ');
 
             const promptSistema = `Você é o assistente logístico super-agente do sistema TecCheck da TecService. 
-            Você tem AUTONOMIA TOTAL para interagir com o banco de dados.
+            Você tem AUTONOMIA TOTAL para interagir com o banco de dados e deve ser prestativa.
 
-            MUITO IMPORTANTE - REGRAS DE AÇÃO:
-            Para executar uma ação real no sistema, você DEVE gerar os comandos abaixo no seu texto. Tente usar sempre o formato exato com colchetes.
-            
-            1. Criar Produto: [CMD_CRIAR_ITEM: Nome do Produto | Quantidade | Nome do Local]
-            2. Atualizar Estoque (Calcule o total antes): [CMD_MUDAR_QTD: Nome Exato do Produto | Quantidade Final]
-            3. Renomear Produto: [CMD_RENOMEAR_ITEM: Nome Antigo | Nome Novo]
-            4. Criar Local (Caixa/Prateleira): [CMD_CRIAR_LOCAL: Nome do Local | Tipo] (Tipo = "Caixa" ou "Prateleira")
-            5. Mostrar QR Code: [CMD_QRCODE: Nome do Item ou Local]
+            MUITO IMPORTANTE:
+            Para executar ações no sistema, você DEVE gerar um ou mais comandos no formato exato abaixo.
+            NUNCA digite os comandos soltos como exemplos na conversa. SÓ digite o comando se for para alterar algo DE FATO a pedido do usuário.
 
-            Exemplo de como você deve agir: "Pode deixar, estou criando a caixa! [CMD_CRIAR_LOCAL: Caixa 50 | Caixa]"
-            
+            LISTA RESTRITA DE COMANDOS:
+            [EXEC:CRIAR_ITEM|Nome do Produto|Quantidade|Nome do Local]
+            [EXEC:MUDAR_QTD|Nome Exato|Nova Quantidade Total (faça a conta matemática)]
+            [EXEC:ALTERAR_PRECO|Nome Exato|Novo Valor Unitário (somente numero com ponto, ex: 10.50)]
+            [EXEC:RENOMEAR|Nome Antigo|Nome Novo]
+            [EXEC:CRIAR_LOCAL|Nome do Local|Tipo (Caixa ou Prateleira)]
+            [EXEC:QRCODE|Nome do Produto ou Local]
+
+            Responda amigavelmente primeiro. Se for uma saudação, apenas dê oi. Se o usuário pedir ação, adicione os comandos no final.
             Dados atuais - Itens: [${inventarioResumido}]
             Dados atuais - Locais: [${locaisResumidos}]`;
 
@@ -1741,108 +1742,121 @@
                 if(data.error) throw new Error(data.error.message);
 
                 let respostaIA = data.choices[0].message.content;
-                let mensagemFinalParaUsuario = respostaIA;
+                let acoesExecutadas = [];
                 let interfacePrecisaAtualizar = false;
                 
                 document.getElementById('iaDigitando').remove();
 
-                // ⚡ 1. MOTOR DE INTERCEPTAÇÃO: CRIAR ITEM (Agora mais inteligente e tolerante a falhas)
-                const regexCriarItem = /\[?CMD_CRIAR_ITEM:\s*([^|]+?)\s*\|\s*(\d+)\s*\|\s*([^\]\n<]+?)\]?/gi;
+                // ⚡ NOVO MOTOR DE INTERCEPTAÇÃO ESTRITA ⚡
+                const regexExec = /\[EXEC:([^\]]+)\]/gi;
                 let match;
-                while ((match = regexCriarItem.exec(respostaIA)) !== null) {
-                    const nomeItem = match[1].trim();
-                    const qtdItem = parseInt(match[2]);
-                    const locItem = match[3].trim();
-                    const newId = "ATV-IA-" + Date.now().toString() + Math.floor(Math.random()*1000);
-                    
-                    let payloadItem = { codigo: "GERADO-IA", marca: "Automático", nome: nomeItem, localizacao: locItem, categoria: "Geral", unidade: "un", fornecedor: "Nenhum", preco: 0, atual: qtdItem, minimo: 0, foto: "", id: newId, checked: false };
-                    dbItems.push(payloadItem);
-                    db.collection("tec_items").doc(newId).set(payloadItem);
-                    
-                    mensagemFinalParaUsuario = mensagemFinalParaUsuario.replace(match[0], `<br><span style="color:var(--green)"><b>✅ Adicionado:</b> Item '${nomeItem}' (${qtdItem} un) na ${locItem}.</span>`);
-                    interfacePrecisaAtualizar = true;
-                }
+                
+                while ((match = regexExec.exec(respostaIA)) !== null) {
+                    let fullCmd = match[1];
+                    let parts = fullCmd.split('|').map(p => p.trim());
+                    let acao = parts[0].toUpperCase();
 
-                // ⚡ 2. MOTOR DE INTERCEPTAÇÃO: MUDAR QUANTIDADE
-                const regexMudarQtd = /\[?CMD_MUDAR_QTD:\s*([^|]+?)\s*\|\s*(\d+)\]?/gi;
-                while ((match = regexMudarQtd.exec(respostaIA)) !== null) {
-                    const nomeAlvo = match[1].trim();
-                    const qtdFinal = parseInt(match[2]);
-                    const item = dbItems.find(i => String(i.nome).toLowerCase().includes(nomeAlvo.toLowerCase()));
-                    if(item) {
-                        item.atual = qtdFinal;
-                        db.collection("tec_items").doc(String(item.id)).update({ atual: qtdFinal });
-                        mensagemFinalParaUsuario = mensagemFinalParaUsuario.replace(match[0], `<br><span style="color:var(--accent)"><b>⚡ Atualizado:</b> Estoque de '${item.nome}' ajustado para ${qtdFinal}.</span>`);
+                    if (acao === "CRIAR_ITEM" && parts.length >= 4) {
+                        const nomeItem = parts[1];
+                        const qtdItem = parseInt(parts[2]) || 0;
+                        const locItem = parts[3];
+                        const newId = "ATV-IA-" + Date.now().toString() + Math.floor(Math.random()*1000);
+                        
+                        let payloadItem = { codigo: "GERADO-IA", marca: "Automático", nome: nomeItem, localizacao: locItem, categoria: "Geral", unidade: "un", fornecedor: "Nenhum", preco: 0, atual: qtdItem, minimo: 0, foto: "", id: newId, checked: false };
+                        dbItems.push(payloadItem);
+                        db.collection("tec_items").doc(newId).set(payloadItem);
+                        
+                        acoesExecutadas.push(`<span style="color:var(--green)">✅ <b>Criado:</b> ${nomeItem} (${qtdItem} un) na ${locItem}</span>`);
                         interfacePrecisaAtualizar = true;
-                    } else {
-                        mensagemFinalParaUsuario = mensagemFinalParaUsuario.replace(match[0], `<br><span style="color:var(--red)"><b>❌ Erro:</b> Não encontrei o item '${nomeAlvo}'.</span>`);
+                    }
+                    else if (acao === "MUDAR_QTD" && parts.length >= 3) {
+                        const nomeAlvo = parts[1];
+                        const qtdFinal = parseInt(parts[2]) || 0;
+                        const item = dbItems.find(i => String(i.nome).toLowerCase().includes(nomeAlvo.toLowerCase()));
+                        if(item) {
+                            item.atual = qtdFinal;
+                            db.collection("tec_items").doc(String(item.id)).update({ atual: qtdFinal });
+                            acoesExecutadas.push(`<span style="color:var(--accent)">⚡ <b>Estoque Atualizado:</b> '${item.nome}' ajustado para ${qtdFinal}</span>`);
+                            interfacePrecisaAtualizar = true;
+                        } else {
+                            acoesExecutadas.push(`<span style="color:var(--red)">❌ <b>Erro:</b> Produto '${nomeAlvo}' não localizado para mudar a quantidade.</span>`);
+                        }
+                    }
+                    else if (acao === "ALTERAR_PRECO" && parts.length >= 3) {
+                        const nomeAlvo = parts[1];
+                        // Garante que o valor entra como número
+                        const novoPreco = parseFloat(parts[2].replace(',', '.')) || 0; 
+                        const item = dbItems.find(i => String(i.nome).toLowerCase().includes(nomeAlvo.toLowerCase()));
+                        if(item) {
+                            item.preco = novoPreco;
+                            db.collection("tec_items").doc(String(item.id)).update({ preco: novoPreco });
+                            acoesExecutadas.push(`<span style="color:var(--accent)">💲 <b>Preço Alterado:</b> '${item.nome}' agora custa R$ ${novoPreco.toFixed(2)}</span>`);
+                            interfacePrecisaAtualizar = true;
+                        } else {
+                            acoesExecutadas.push(`<span style="color:var(--red)">❌ <b>Erro:</b> Produto '${nomeAlvo}' não localizado para mudar o preço.</span>`);
+                        }
+                    }
+                    else if (acao === "RENOMEAR" && parts.length >= 3) {
+                        const nomeAntigo = parts[1];
+                        const nomeNovo = parts[2];
+                        const item = dbItems.find(i => String(i.nome).toLowerCase().includes(nomeAntigo.toLowerCase()));
+                        if(item) {
+                            item.nome = nomeNovo;
+                            db.collection("tec_items").doc(String(item.id)).update({ nome: nomeNovo });
+                            acoesExecutadas.push(`<span style="color:var(--accent)">✏️ <b>Renomeado:</b> Produto virou '${nomeNovo}'</span>`);
+                            interfacePrecisaAtualizar = true;
+                        } else {
+                            acoesExecutadas.push(`<span style="color:var(--red)">❌ <b>Erro:</b> Produto '${nomeAntigo}' não localizado para renomear.</span>`);
+                        }
+                    }
+                    else if (acao === "CRIAR_LOCAL" && parts.length >= 3) {
+                        const nomeLoc = parts[1];
+                        const tipoLoc = parts[2];
+                        if(!dbLocais.find(l => String(l.nome).toLowerCase() === nomeLoc.toLowerCase())) {
+                            dbLocais.push({ id: "LOC-IA-" + Date.now().toString(), nome: nomeLoc, tipo: tipoLoc });
+                            salvarConfigNaNuvem();
+                            acoesExecutadas.push(`<span style="color:var(--green)">📦 <b>Local Criado:</b> '${nomeLoc}' (${tipoLoc}) registrado com sucesso.</span>`);
+                            interfacePrecisaAtualizar = true;
+                        } else {
+                            acoesExecutadas.push(`<span style="color:var(--amber)">⚠️ <b>Aviso:</b> O local '${nomeLoc}' já existe no sistema.</span>`);
+                        }
+                    }
+                    else if (acao === "QRCODE" && parts.length >= 2) {
+                        const alvo = parts[1];
+                        let qrData = alvo, label = alvo;
+                        const item = dbItems.find(i => String(i.nome).toLowerCase().includes(alvo.toLowerCase()) || i.id === alvo);
+                        const loc = dbLocais.find(l => String(l.nome).toLowerCase().includes(alvo.toLowerCase()) || l.id === alvo);
+                        
+                        if(item) { qrData = item.id; label = item.nome; }
+                        else if (loc) { qrData = loc.id; label = loc.nome; }
+
+                        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrData)}&margin=10`;
+                        acoesExecutadas.push(`<div style="text-align:center; margin-top:10px; padding:10px; background:#fff; border-radius:10px; border:2px solid var(--accent); display:inline-block;">
+                            <p style="font-size:12px; font-weight:bold; color:#000; margin-bottom:5px;">${label}</p>
+                            <img src="${qrUrl}" alt="QR Code" style="width:130px; height:130px; border-radius:8px;">
+                        </div>`);
                     }
                 }
 
-                // ⚡ 3. MOTOR DE INTERCEPTAÇÃO: RENOMEAR ITEM
-                const regexRenomear = /\[?CMD_RENOMEAR_ITEM:\s*([^|]+?)\s*\|\s*([^\]\n<]+?)\]?/gi;
-                while ((match = regexRenomear.exec(respostaIA)) !== null) {
-                    const nomeAntigo = match[1].trim();
-                    const nomeNovo = match[2].trim();
-                    const item = dbItems.find(i => String(i.nome).toLowerCase().includes(nomeAntigo.toLowerCase()));
-                    if(item) {
-                        item.nome = nomeNovo;
-                        db.collection("tec_items").doc(String(item.id)).update({ nome: nomeNovo });
-                        mensagemFinalParaUsuario = mensagemFinalParaUsuario.replace(match[0], `<br><span style="color:var(--accent)"><b>✏️ Renomeado:</b> Produto agora se chama '${nomeNovo}'.</span>`);
-                        interfacePrecisaAtualizar = true;
-                    }
+                // Remove cirurgicamente TODOS os comandos [EXEC:...] invisíveis da resposta em texto para não sujar a tela
+                let textoHigienizado = respostaIA.replace(/\[EXEC:[^\]]+\]/gi, '').trim();
+                
+                // Monta a caixa visual de logs se houver ações executadas
+                let htmlFinal = textoHigienizado;
+                if(acoesExecutadas.length > 0) {
+                    htmlFinal += `<br><br><div style="font-size:13px; background:var(--card); padding:10px; border-radius:8px; border-left:4px solid var(--accent); display:flex; flex-direction:column; gap:6px;">` + acoesExecutadas.join('') + `</div>`;
                 }
 
-                // ⚡ 4. MOTOR DE INTERCEPTAÇÃO: CRIAR LOCAL (Caixa/Prateleira)
-                const regexCriarLocal = /\[?CMD_CRIAR_LOCAL:\s*([^|]+?)\s*\|\s*([^\]\n<]+?)\]?/gi;
-                while ((match = regexCriarLocal.exec(respostaIA)) !== null) {
-                    const nomeLoc = match[1].trim();
-                    const tipoLoc = match[2].trim();
-                    if(!dbLocais.find(l => String(l.nome).toLowerCase() === nomeLoc.toLowerCase())) {
-                        dbLocais.push({ id: "LOC-IA-" + Date.now().toString(), nome: nomeLoc, tipo: tipoLoc });
-                        salvarConfigNaNuvem(); // Salva Locais no Firebase
-                        mensagemFinalParaUsuario = mensagemFinalParaUsuario.replace(match[0], `<br><span style="color:var(--green)"><b>📦 Local Criado:</b> '${nomeLoc}' (${tipoLoc}) registrado com sucesso.</span>`);
-                        interfacePrecisaAtualizar = true;
-                    } else {
-                        mensagemFinalParaUsuario = mensagemFinalParaUsuario.replace(match[0], `<br><span style="color:var(--amber)"><b>⚠️ Aviso:</b> O local '${nomeLoc}' já existe.</span>`);
-                    }
-                }
-
-                // ⚡ 5. MOTOR DE INTERCEPTAÇÃO: GERAR QR CODE NA TELA
-                const regexQR = /\[?CMD_QRCODE:\s*([^\]\n<]+?)\]?/gi;
-                while ((match = regexQR.exec(respostaIA)) !== null) {
-                    const alvo = match[1].trim();
-                    let qrData = alvo;
-                    let label = alvo;
-                    
-                    const item = dbItems.find(i => String(i.nome).toLowerCase().includes(alvo.toLowerCase()) || i.id === alvo);
-                    const loc = dbLocais.find(l => String(l.nome).toLowerCase().includes(alvo.toLowerCase()) || l.id === alvo);
-                    
-                    if(item) { qrData = item.id; label = item.nome; }
-                    else if (loc) { qrData = loc.id; label = loc.nome; }
-
-                    // Gera a imagem do QR code dinamicamente via API pública
-                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrData)}&margin=10`;
-                    
-                    const htmlQR = `<br><div style="text-align:center; margin-top:10px; padding:10px; background:#fff; border-radius:10px; border:2px solid var(--accent); display:inline-block;">
-                        <p style="font-size:12px; font-weight:bold; color:#000; margin-bottom:5px;">${label}</p>
-                        <img src="${qrUrl}" alt="QR Code" style="width:130px; height:130px; border-radius:8px;">
-                    </div>`;
-
-                    mensagemFinalParaUsuario = mensagemFinalParaUsuario.replace(match[0], htmlQR);
-                }
-
-                // Joga a mensagem final higienizada na tela
-                chatBody.innerHTML += `<div class="chat-msg ai">${mensagemFinalParaUsuario}</div>`;
+                chatBody.innerHTML += `<div class="chat-msg ai">${htmlFinal}</div>`;
                 chatBody.scrollTop = chatBody.scrollHeight;
 
                 if (interfacePrecisaAtualizar) {
-                    atualizarInterfaceCompleta(); // Se a IA mudou algo, a tela pisca e atualiza sozinha!
+                    atualizarInterfaceCompleta(); // Se a IA mudou algo, a tela principal reflete a mudança no mesmo segundo!
                 }
                 
             } catch (error) {
                 if(document.getElementById('iaDigitando')) document.getElementById('iaDigitando').remove();
-                chatBody.innerHTML += `<div class="chat-msg ai" style="color:var(--red);">Erro na operação da inteligência artificial.</div>`;
+                chatBody.innerHTML += `<div class="chat-msg ai" style="color:var(--red);">Erro interno no agente da IA. Tente reformular a frase.</div>`;
                 console.error(error);
             }
         }
