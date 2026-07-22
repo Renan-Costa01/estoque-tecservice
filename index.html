@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TecCheck - TECSERVICE</title>
     
+    <!-- 🟢 ÍCONES PROFISSIONAIS DO SISTEMA 🟢 -->
     <link rel="icon" type="image/png" sizes="64x64" href="Donald.png">
     <link rel="icon" type="image/png" sizes="32x32" href="Donald.png">
     <link rel="apple-touch-icon" sizes="180x180" href="Donald.png">
@@ -111,7 +112,7 @@
         /* --- MODAIS GERAIS --- */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(7, 10, 18, 0.7); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 5000; transition: opacity 0.2s ease; }
         .modal-overlay.active { display: flex; }
-        .modal-content { background: var(--card); border: 1px solid var(--border); border-radius: 20px; width: 95%; max-width: 600px; padding: 32px; box-shadow: var(--shadow); max-height: 90vh; overflow-y: auto; }
+        .modal-content { background: var(--card); border: 1px solid var(--border); border-radius: 20px; width: 95%; max-width: 700px; padding: 32px; box-shadow: var(--shadow); max-height: 90vh; overflow-y: auto; }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
         .modal-header h3 { font-size: 18px; font-weight: 700; font-family: 'DM Serif Display', serif; }
         
@@ -135,14 +136,16 @@
         .custom-file-upload { padding: 11px; border: 1px dashed var(--border); border-radius: 8px; text-align: center; cursor: pointer; color: var(--ink-muted); font-size: 13px; font-weight: 500; background: var(--card2); display: block; }
 
         /* CONFIGS E MATRIZ DE CHECKBOXES */
-        .print-selector-container { max-height: 160px; overflow-y: auto; border: 1px solid var(--border); padding: 12px; border-radius: 8px; background: var(--card2); display: flex; flex-direction: column; gap: 8px; }
+        .print-selector-container { max-height: 250px; overflow-y: auto; border: 1px solid var(--border); padding: 12px; border-radius: 8px; background: var(--card2); display: flex; flex-direction: column; gap: 8px; }
         .print-selector-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; cursor: pointer; margin-bottom:4px; }
         .print-selector-item input { width: 16px; height: 16px; cursor: pointer; }
         .print-selector-divider { height: 1px; background: var(--border); margin: 4px 0; }
         .matrix-permissions-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: var(--card2); padding: 12px; border: 1px solid var(--border); border-radius: 8px; }
         
         .items-avulsos-box { display: flex; flex-direction: column; gap: 6px; padding-left: 20px; border-left: 2px dashed var(--border); margin-top: 4px; margin-bottom: 8px; }
-        .print-item-avulso-row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-muted); }
+        .print-item-wrapper { display: flex; align-items: center; justify-content: space-between; gap: 6px; background: var(--bg); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); }
+        .print-item-avulso-row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink); flex: 1; cursor:pointer;}
+        .print-qtd-input { width: 70px; padding: 6px; border: 2px solid var(--accent); border-radius: 6px; font-size: 12px; font-weight: bold; text-align: center; display: none; }
 
         .config-section { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
         .config-box { background: var(--card); border: 1px solid var(--border); padding: 24px; border-radius: 10px; box-shadow: var(--shadow); }
@@ -303,7 +306,7 @@
                 <div class="topbar-actions" id="topbarActionsArea">
                     <button class="btn btn-secundario" onclick="abrirModalIntegracao()">🔄 Backups / Excel</button>
                     <button class="btn btn-sucesso" onclick="iniciarRotaAuditoria()">🧭 Iniciar Auditoria</button>
-                    <button class="btn btn-secundario" onclick="abrirModalPrint()">🖨️ Imprimir</button>
+                    <button class="btn btn-secundario" onclick="abrirModalPrint()">🖨️ Central de Impressão</button>
                     <button class="btn btn-primario" id="btnActionNovoAtivoTop" onclick="abrirModalItem()">➕ Novo Ativo</button>
                 </div>
             </header>
@@ -665,28 +668,54 @@
         </div>
     </div>
 
-    <!-- IMPRESSÃO DINÂMICA -->
+    <!-- 🟢 CENTRAL DE IMPRESSÃO INTEGRADA (ESTOQUE E COMPRAS) 🟢 -->
     <div class="modal-overlay" id="modalPrintOverlay">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Configurar Relatório</h3>
+                <h3>Central de Impressão</h3>
                 <button class="btn-icon" onclick="fecharModal('modalPrintOverlay')">✕</button>
             </div>
             <div class="form-grid">
+                
                 <div class="form-group form-group-full">
-                    <label>Formato do Documento</label>
-                    <select id="printFormato" onchange="atualizarInterfacePrint()">
-                        <option value="a4">Folha A4 Padrão (Tabela Completa)</option>
-                        <option value="cupom">Notinha / Cupom Térmico (80mm)</option>
+                    <label>Tipo de Documento</label>
+                    <select id="printTipoRelatorio" onchange="togglePrintModoCompra()" style="border: 2px solid var(--accent); font-weight:bold;">
+                        <option value="estoque">Relatório de Estoque (Padrão)</option>
+                        <option value="compra">🛒 Solicitação / Pedido de Compra</option>
                     </select>
                 </div>
                 
+                <div class="form-group form-group-full">
+                    <input type="text" id="searchPrintInput" placeholder="🔍 Buscar material para imprimir..." class="search-bar" style="margin-bottom:0;" oninput="filtrarBuscaPrint()">
+                </div>
+
+                <div class="form-group form-group-full">
+                    <label>Selecione os Itens</label>
+                    <div class="print-selector-container" id="printCategoriasCheckboxList">
+                        <!-- O Javascript injetará a lista aqui -->
+                    </div>
+                </div>
+                
+                <!-- Opções que só aparecem no relatório de estoque -->
+                <div class="form-group form-group-full" id="areaFiltroEstoque">
+                    <label>Condição de Estoque</label>
+                    <select id="printFiltroStatus">
+                        <option value="todos">Todos os Itens Selecionados</option>
+                        <option value="criticos">Apenas Itens em Falta (Alerta)</option>
+                    </select>
+                </div>
+
+                <!-- Observação que só aparece no pedido de compra -->
+                <div class="form-group form-group-full" id="areaObsCompra" style="display:none;">
+                    <label>Observações / Mensagem ao Fornecedor</label>
+                    <textarea id="printObsCompra" rows="2" placeholder="Ex: Solicito cotação urgente para a matriz..."></textarea>
+                </div>
+                
                 <div class="form-group form-group-full" id="areaEscolhaColunas">
-                    <label>Colunas a Imprimir (Folha A4)</label>
+                    <label>Colunas (Para Folha A4)</label>
                     <div style="display:flex; flex-wrap:wrap; gap:10px; padding:10px; background:var(--card2); border-radius:8px; border:1px solid var(--border);">
                         <label class="print-selector-item"><input type="checkbox" id="colFoto" checked> Foto</label>
                         <label class="print-selector-item"><input type="checkbox" id="colCod" checked> Cód.</label>
-                        <label class="print-selector-item"><input type="checkbox" id="colDesc" checked disabled> Descrição</label>
                         <label class="print-selector-item"><input type="checkbox" id="colCat" checked> Categoria</label>
                         <label class="print-selector-item"><input type="checkbox" id="colLocal" checked> Local</label>
                         <label class="print-selector-item"><input type="checkbox" id="colEst" checked> Estoque Atual</label>
@@ -696,17 +725,6 @@
                     </div>
                 </div>
 
-                <div class="form-group form-group-full">
-                    <label>Selecionar Diretórios de Estoque</label>
-                    <div class="print-selector-container" id="printCategoriasCheckboxList"></div>
-                </div>
-                <div class="form-group form-group-full">
-                    <label>Condição de Estoque</label>
-                    <select id="printFiltroStatus">
-                        <option value="todos">Todos os Itens do Escopo</option>
-                        <option value="criticos">Apenas Itens em Falta (Alerta)</option>
-                    </select>
-                </div>
             </div>
             <div style="display:flex; justify-content: flex-end; margin-top:28px;">
                 <button class="btn btn-primario" style="width:100%;" onclick="executarMotorImpressao()">🖨️ Disparar Impressão</button>
@@ -730,8 +748,7 @@
     <div class="area-exclusiva-qr-print" id="qrPrintTarget"></div>
 
     <script>
-        // 🚀 INICIALIZANDO O  DO FIREBASE (NOVO BANCO DE DADOS) 🚀
-        // Usando atob() para esconder a chave pública do robô do GitHub
+        // 🚀 INICIALIZANDO O FIREBASE 🚀
         const firebaseConfig = {
           apiKey: atob("QUl6YVN5RGp4dzJHXzNHNFQyNmxqS2hLTXhMeHY4ZlNZbXZ1UWZz"),
           authDomain: "tecservice-8ce6b.firebaseapp.com",
@@ -743,7 +760,6 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         
-        // Ativando Cache Offline do Firebase (Permite usar no estoque sem Wi-Fi)
         db.enablePersistence({synchronizeTabs:true}).catch(function(err) {
             console.log("Aviso de Cache Offline do Firebase:", err);
         });
@@ -760,7 +776,6 @@
         let emAuditoria = false;
         let rotaLocaisAProcessar = []; let rotaIndiceAtual = 0; let logAuditoriaSessao = [];
 
-        // 🛡️ MEMÓRIA LOCAL (Mantida por segurança enquanto o Firebase não carrega a tela)
         function carregarBancoLocal() {
             dbItems = JSON.parse(localStorage.getItem('tec_items')) || [];
             dbLocais = JSON.parse(localStorage.getItem('tec_locais')) || [];
@@ -786,11 +801,8 @@
             renderConfiguracoes();
         }
 
-        // 🚀 O NOVO "CÉREBRO" DE SINCRONIZAÇÃO EM TEMPO REAL 🚀
         function iniciarTempoReal() {
             let primeiroCarregamentoConfig = true;
-            
-            // Fica "escutando" as configurações (Categorias, Locais, Perfis)
             db.collection("tec_config").doc("geral").onSnapshot((doc) => {
                 if (doc.exists) {
                     const data = doc.data();
@@ -801,23 +813,17 @@
                     dbHistorico = data.historico || [];
                     dbAuditorias = data.auditorias || [];
                     dbPerfisAcesso = (data.perfis && data.perfis.length > 0) ? data.perfis : [{ nome: "ADMINISTRATIVO", pin: "1111", master: true, categorias:[], permissoes:{criar:true, editar:true, deletar:true} }];
-                    
                     if(perfilAutenticadoGlobal) atualizarInterfaceCompleta();
                 } else if (primeiroCarregamentoConfig) {
-                    // Mágica 1: Se o Firebase está vazio, sobe as configurações do seu PC pra lá automaticamente!
                     salvarConfigNaNuvem();
                 }
                 primeiroCarregamentoConfig = false;
             });
 
             let primeiroCarregamentoItems = true;
-            // Fica "escutando" os produtos individualmente
             db.collection("tec_items").onSnapshot((snapshot) => {
                 if (snapshot.empty && primeiroCarregamentoItems && dbItems.length > 0) {
-                    // Mágica 2: Se o Firebase não tem itens, sobe todo o seu estoque local automaticamente!
-                    console.log("Migrando produtos para o Firebase...");
-                    let batch = db.batch();
-                    let count = 0;
+                    let batch = db.batch(); let count = 0;
                     dbItems.forEach(item => {
                         batch.set(db.collection("tec_items").doc(String(item.id)), item);
                         count++;
@@ -835,7 +841,6 @@
             });
         }
 
-        // 📤 SALVA APENAS CONFIGURAÇÕES (O Firebase salva itens separado)
         function salvarConfigNaNuvem() {
             localStorage.setItem('tec_locais', JSON.stringify(dbLocais));
             localStorage.setItem('tec_cat_complexas', JSON.stringify(dbCategoriasComplexas));
@@ -845,22 +850,10 @@
             localStorage.setItem('tec_auditorias', JSON.stringify(dbAuditorias));
             localStorage.setItem('tec_perfis', JSON.stringify(dbPerfisAcesso));
 
-            db.collection("tec_config").doc("geral").set({
-                locais: dbLocais,
-                categorias: dbCategoriasComplexas,
-                unidades: dbUnidades,
-                fornecedores: dbFornecedores,
-                historico: dbHistorico,
-                auditorias: dbAuditorias,
-                perfis: dbPerfisAcesso
-            }, {merge: true});
+            db.collection("tec_config").doc("geral").set({ locais: dbLocais, categorias: dbCategoriasComplexas, unidades: dbUnidades, fornecedores: dbFornecedores, historico: dbHistorico, auditorias: dbAuditorias, perfis: dbPerfisAcesso }, {merge: true});
         }
 
-        async function iniciarAplicativo() {
-            carregarBancoLocal();
-            verificarSessaoSalva();
-            iniciarTempoReal(); // O Firebase assume o controle a partir daqui
-        }
+        async function iniciarAplicativo() { carregarBancoLocal(); verificarSessaoSalva(); iniciarTempoReal(); }
 
         function sincronizarLocaisAntigos() {
             let locaisAlterados = false;
@@ -906,8 +899,7 @@
         }
 
         async function subirItensParaFirestore(itensArray) {
-            let batch = db.batch();
-            let count = 0;
+            let batch = db.batch(); let count = 0;
             for (let item of itensArray) {
                 batch.set(db.collection("tec_items").doc(String(item.id)), item);
                 count++;
@@ -919,7 +911,6 @@
         async function processarUploadArquivo() {
             const input = document.getElementById('uploadBackupInput');
             if(!input.files || input.files.length === 0) return alert("Selecione o arquivo CSV, XML ou JSON primeiro.");
-            
             const file = input.files[0];
             const substituir = document.getElementById('chkSubstituirEstoque').checked;
             
@@ -927,23 +918,14 @@
 
             const reader = new FileReader();
             reader.onload = async function(e) {
-                const conteudo = e.target.result;
-                const extensao = file.name.split('.').pop().toLowerCase();
-                
+                const conteudo = e.target.result; const extensao = file.name.split('.').pop().toLowerCase();
                 try {
                     let novosItens = [];
                     if (extensao === 'json') {
                         const dados = JSON.parse(conteudo);
                         if(substituir) {
-                            if(dados.items) dbItems = dados.items;
-                            if(dados.locais) dbLocais = dados.locais;
-                            if(dados.categorias) dbCategoriasComplexas = dados.categorias;
-                            if(dados.unidades) dbUnidades = dados.unidades;
-                            if(dados.fornecedores) dbFornecedores = dados.fornecedores;
-                            if(dados.profiles) dbPerfisAcesso = dados.profiles;
-                        } else {
-                            if(dados.items) novosItens = dados.items;
-                        }
+                            if(dados.items) dbItems = dados.items; if(dados.locais) dbLocais = dados.locais; if(dados.categorias) dbCategoriasComplexas = dados.categorias; if(dados.unidades) dbUnidades = dados.unidades; if(dados.fornecedores) dbFornecedores = dados.fornecedores; if(dados.profiles) dbPerfisAcesso = dados.profiles;
+                        } else { if(dados.items) novosItens = dados.items; }
                     } 
                     else if (extensao === 'csv') {
                         const linhas = conteudo.split('\n');
@@ -951,61 +933,26 @@
                             if(!linhas[i].trim()) continue;
                             const colunas = linhas[i].split(';');
                             if(colunas.length >= 7) {
-                                novosItens.push({
-                                    id: colunas[0] || ("ATV-REC-" + Math.random().toString(36).substr(2, 9)),
-                                    codigo: colunas[1] || '',
-                                    nome: colunas[2] || 'Sem Nome',
-                                    localizacao: colunas[3] || 'Geral',
-                                    categoria: colunas[4] || 'Geral',
-                                    unidade: colunas[5] || 'un',
-                                    preco: parseFloat(colunas[6]) || 0,
-                                    atual: parseInt(colunas[7]) || 0,
-                                    minimo: parseInt(colunas[8]) || 0
-                                });
+                                novosItens.push({ id: colunas[0] || ("ATV-REC-" + Math.random().toString(36).substr(2, 9)), codigo: colunas[1] || '', nome: colunas[2] || 'Sem Nome', localizacao: colunas[3] || 'Geral', categoria: colunas[4] || 'Geral', unidade: colunas[5] || 'un', preco: parseFloat(colunas[6]) || 0, atual: parseInt(colunas[7]) || 0, minimo: parseInt(colunas[8]) || 0 });
                             }
                         }
                         if(substituir) dbItems = novosItens; else dbItems = dbItems.concat(novosItens);
                     }
                     else if (extensao === 'xml') {
-                        const parser = new DOMParser();
-                        const xmlDoc = parser.parseFromString(conteudo, "text/xml");
-                        const itensNodes = xmlDoc.getElementsByTagName("item");
+                        const parser = new DOMParser(); const xmlDoc = parser.parseFromString(conteudo, "text/xml"); const itensNodes = xmlDoc.getElementsByTagName("item");
                         for (let i = 0; i < itensNodes.length; i++) {
-                            const node = itensNodes[i];
-                            const getVal = (tag) => node.getElementsByTagName(tag)[0]?.textContent || '';
-                            novosItens.push({
-                                id: getVal("id") || ("ATV-REC-" + Math.random().toString(36).substr(2, 9)),
-                                codigo: getVal("codigo"),
-                                nome: getVal("nome") || 'Sem Nome',
-                                localizacao: getVal("localizacao") || 'Geral',
-                                atual: parseInt(getVal("quantidade")) || parseInt(getVal("atual")) || 0,
-                                minimo: parseInt(getVal("minimo")) || 0,
-                                preco: parseFloat(getVal("preco")) || 0,
-                                categoria: getVal("categoria") || 'Geral',
-                                unidade: getVal("unidade") || 'un'
-                            });
+                            const node = itensNodes[i]; const getVal = (tag) => node.getElementsByTagName(tag)[0]?.textContent || '';
+                            novosItens.push({ id: getVal("id") || ("ATV-REC-" + Math.random().toString(36).substr(2, 9)), codigo: getVal("codigo"), nome: getVal("nome") || 'Sem Nome', localizacao: getVal("localizacao") || 'Geral', atual: parseInt(getVal("quantidade")) || parseInt(getVal("atual")) || 0, minimo: parseInt(getVal("minimo")) || 0, preco: parseFloat(getVal("preco")) || 0, categoria: getVal("categoria") || 'Geral', unidade: getVal("unidade") || 'un' });
                         }
                         if(substituir) dbItems = novosItens; else dbItems = dbItems.concat(novosItens);
-                    } else {
-                        return alert("Formato inválido! Use .csv, .xml ou .json");
-                    }
+                    } else return alert("Formato inválido! Use .csv, .xml ou .json");
 
-                    sincronizarLocaisAntigos();
-                    salvarConfigNaNuvem();
-                    atualizarInterfaceCompleta();
-                    fecharModal('modalIntegracao');
+                    sincronizarLocaisAntigos(); salvarConfigNaNuvem(); atualizarInterfaceCompleta(); fecharModal('modalIntegracao');
                     alert("✅ Processando... Os arquivos estão subindo para a nuvem em lote.");
                     
-                    if(substituir) {
-                        await subirItensParaFirestore(dbItems);
-                    } else {
-                        await subirItensParaFirestore(novosItens);
-                    }
+                    if(substituir) await subirItensParaFirestore(dbItems); else await subirItensParaFirestore(novosItens);
 
-                } catch (error) {
-                    console.error(error);
-                    alert("❌ Erro ao ler o arquivo. Ele pode estar corrompido.");
-                }
+                } catch (error) { console.error(error); alert("❌ Erro ao ler o arquivo. Ele pode estar corrompido."); }
             };
             reader.readAsText(file);
         }
@@ -1019,14 +966,8 @@
         function carregarPassoAuditoria() {
             if(rotaIndiceAtual >= rotaLocaisAProcessar.length) { concluirSessaoAuditoriaCompleta(); return; }
             
-            const btnNext = document.getElementById('btnNextStepAudit');
-            const btnVoltar = document.getElementById('btnVoltarAudit');
-            
-            if (rotaIndiceAtual === rotaLocaisAProcessar.length - 1) {
-                btnNext.textContent = "Salvar e Concluir Auditoria"; btnNext.style.background = "var(--green)";
-            } else {
-                btnNext.textContent = "Salvar e Ir p/ Próximo"; btnNext.style.background = "var(--accent)";
-            }
+            const btnNext = document.getElementById('btnNextStepAudit'); const btnVoltar = document.getElementById('btnVoltarAudit');
+            if (rotaIndiceAtual === rotaLocaisAProcessar.length - 1) { btnNext.textContent = "Salvar e Concluir Auditoria"; btnNext.style.background = "var(--green)"; } else { btnNext.textContent = "Salvar e Ir p/ Próximo"; btnNext.style.background = "var(--accent)"; }
             if (rotaIndiceAtual === 0) { btnVoltar.disabled = true; btnVoltar.style.opacity = '0.5'; } else { btnVoltar.disabled = false; btnVoltar.style.opacity = '1'; }
 
             const localAtual = rotaLocaisAProcessar[rotaIndiceAtual];
@@ -1044,15 +985,10 @@
                 const idItem = input.getAttribute('data-id'); const oldVal = parseInt(input.getAttribute('data-old')); const novaQtd = parseInt(input.value);
                 if (oldVal !== novaQtd) { 
                     const itemRef = dbItems.find(i => String(i.id).trim() === String(idItem).trim()); 
-                    if(itemRef) { 
-                        itemRef.atual = novaQtd; 
-                        logAuditoriaSessao.push({ nome: itemRef.nome, de: oldVal, para: novaQtd, local: itemRef.localizacao }); 
-                        batch.update(db.collection("tec_items").doc(String(idItem).trim()), { atual: novaQtd });
-                    } 
+                    if(itemRef) { itemRef.atual = novaQtd; logAuditoriaSessao.push({ nome: itemRef.nome, de: oldVal, para: novaQtd, local: itemRef.localizacao }); batch.update(db.collection("tec_items").doc(String(idItem).trim()), { atual: novaQtd }); } 
                 }
             });
-            batch.commit();
-            rotaIndiceAtual++; carregarPassoAuditoria();
+            batch.commit(); rotaIndiceAtual++; carregarPassoAuditoria();
         }
         function voltarPassoRotaAuditoria() { if (rotaIndiceAtual > 0) { rotaIndiceAtual--; carregarPassoAuditoria(); } }
         function pularRotaAuditoria() { rotaIndiceAtual++; carregarPassoAuditoria(); }
@@ -1069,8 +1005,7 @@
 
         // --- HISTÓRICO E LOGS ---
         function renderHistorico() {
-            if(!Array.isArray(dbHistorico)) dbHistorico = [];
-            if(!Array.isArray(dbAuditorias)) dbAuditorias = [];
+            if(!Array.isArray(dbHistorico)) dbHistorico = []; if(!Array.isArray(dbAuditorias)) dbAuditorias = [];
             const tbody = document.getElementById('renderHistoricoRows'); tbody.innerHTML = '';
             dbHistorico.forEach((lanc, idx) => { tbody.innerHTML += `<tr><td>${new Date(lanc.data + 'T00:00:00').toLocaleDateString('pt-BR')}</td><td>Entrada: <strong>${lanc.nome}</strong></td><td>+${lanc.qtd}</td><td>R$ ${parseFloat(lanc.valor).toFixed(2)}</td><td><button class="btn-icon" style="color:var(--red)" onclick="deletarHistorico(${idx})">🗑️</button></td></tr>`; });
             dbAuditorias.forEach((aud) => {
@@ -1091,51 +1026,152 @@
             document.body.className = 'printing print-a4'; window.print(); setTimeout(() => { document.body.className = 'light'; }, 500);
         }
 
-        // --- IMPRESSÃO DE ESTOQUE ---
+        // --- 🟢 CENTRAL DE IMPRESSÃO INTEGRADA 🟢 ---
         function abrirModalPrint() { 
-            document.getElementById('modalPrintOverlay').classList.add('active'); 
-            const container = document.getElementById('printCategoriasCheckboxList'); container.innerHTML = ''; 
+            document.getElementById('modalPrintOverlay').classList.add('active');
+            document.getElementById('searchPrintInput').value = '';
+            document.getElementById('printObsCompra').value = '';
+            document.getElementById('printTipoRelatorio').value = 'estoque'; // Padrão
+            
+            const container = document.getElementById('printCategoriasCheckboxList'); 
+            container.innerHTML = ''; 
+            
             let categoriasFiltradasParaArvore = Array.isArray(dbCategoriasComplexas) ? dbCategoriasComplexas : [];
-            if (perfilAutenticadoGlobal && !perfilAutenticadoGlobal.master) { categoriasFiltradasParaArvore = categoriasFiltradasParaArvore.filter(c => perfilAutenticadoGlobal.categorias.includes(c.nome)); } else {
-                container.innerHTML += `<div style="margin-bottom:8px;"><label class="print-selector-item" style="font-weight: 700;"><input type="checkbox" id="printSelectAllCategoriesTrigger" checked onchange="alternarTodasCategoriasImpressao(this)"><span>🌐 [Selecionar Todo o Inventário]</span></label></div><div class="print-selector-divider"></div>`;
+            if (perfilAutenticadoGlobal && !perfilAutenticadoGlobal.master) { 
+                categoriasFiltradasParaArvore = categoriasFiltradasParaArvore.filter(c => perfilAutenticadoGlobal.categorias.includes(c.nome)); 
+            } else {
+                container.innerHTML += `<div style="margin-bottom:8px;"><label class="print-selector-item" style="font-weight: 700;"><input type="checkbox" id="printSelectAllCategoriesTrigger" checked onchange="alternarTodasCategoriasImpressao(this)"><span>🌐 [Selecionar Todos os Itens]</span></label></div><div class="print-selector-divider"></div>`;
             }
-            categoriasFiltradasParaArvore.forEach((cat, index) => {
+            
+            categoriasFiltradasParaArvore.forEach((cat) => {
                 const itensDaCategoria = dbItems.filter(item => String(item.categoria) === String(cat.nome));
-                let itemsHtml = itensDaCategoria.length === 0 ? `<div style="font-size:11px; color:#888;">Vazio</div>` : itensDaCategoria.map(item => `<div><label class="print-item-avulso-row"><input type="checkbox" value="${item.id}" checked class="print-item-child-checkbox" data-parent-cat="${cat.nome}" onchange="sincronizarPaiComFilhos('${cat.nome}')"><span>${item.nome||'Sem nome'}</span></label></div>`).join('');
-                container.innerHTML += `<div style="margin-bottom:6px;"><label class="print-selector-item" style="font-weight:600;"><input type="checkbox" value="${cat.nome}" checked class="print-cat-parent-checkbox" data-cat="${cat.nome}" onchange="alternarFilhosDaCategoria(this)"><span style="width:10px; height:10px; background:${cat.cor}; border-radius:50%; display:inline-block;"></span><span>${cat.nome}</span></label><div class="items-avulsos-box" id="items-box-print-${index}">${itemsHtml}</div></div>`;
+                if(itensDaCategoria.length > 0) {
+                    container.innerHTML += `<div style="margin-bottom:6px;"><label class="print-selector-item" style="font-weight:600;"><input type="checkbox" value="${cat.nome}" checked class="print-cat-parent-checkbox" data-cat="${cat.nome}" onchange="alternarFilhosDaCategoria(this)"><span style="width:10px; height:10px; background:${cat.cor}; border-radius:50%; display:inline-block;"></span><span>${cat.nome}</span></label><div class="items-avulsos-box"></div></div>`;
+                    
+                    const boxFilhos = container.lastElementChild.querySelector('.items-avulsos-box');
+                    
+                    itensDaCategoria.forEach(item => {
+                        const isChecked = item.checked ? 'checked' : 'checked'; // Marca tudo por padrão ou pega do cache
+                        const sugestaoQtd = item.atual < item.minimo ? (item.minimo - item.atual) : 1;
+                        const imgRender = item.foto ? `<img src="${item.foto}" style="width:20px; height:20px; border-radius:4px; object-fit:cover;">` : ``;
+
+                        boxFilhos.innerHTML += `
+                            <div class="print-item-wrapper" data-busca="${(item.nome||'').toLowerCase()} ${(item.codigo||'').toLowerCase()}">
+                                <label class="print-item-avulso-row">
+                                    <input type="checkbox" value="${item.id}" ${isChecked} class="print-item-child-checkbox" data-parent-cat="${cat.nome}" onchange="sincronizarPaiComFilhos('${cat.nome}')">
+                                    ${imgRender}
+                                    <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:80%;">${item.nome||'Sem nome'}</span>
+                                </label>
+                                <input type="number" class="print-qtd-input" data-id="${item.id}" value="${sugestaoQtd}" min="1" title="Quantidade para Pedido">
+                            </div>`;
+                    });
+                }
             });
-            atualizarInterfacePrint();
-        }
-        function alternarFilhosDaCategoria(paiCheckbox) { const catNome = paiCheckbox.getAttribute('data-cat'); document.querySelectorAll(`.print-item-child-checkbox[data-parent-cat="${catNome}"]`).forEach(filho => filho.checked = paiCheckbox.checked); verificarStatusSelecaoMaster(); }
-        function sincronizarPaiComFilhos(catNome) { const pai = document.querySelector(`.print-cat-parent-checkbox[data-cat="${catNome}"]`); const filhos = document.querySelectorAll(`.print-item-child-checkbox[data-parent-cat="${catNome}"]`); let algum = false; filhos.forEach(f => { if(f.checked) algum = true; }); pai.checked = algum; verificarStatusSelecaoMaster(); }
-        function alternarTodasCategoriasImpressao(master) { document.querySelectorAll('.print-cat-parent-checkbox, .print-item-child-checkbox').forEach(cb => cb.checked = master.checked); }
-        function verificarStatusSelecaoMaster() { const master = document.getElementById('printSelectAllCategoriesTrigger'); if(!master) return; let todas = true; document.querySelectorAll('.print-item-child-checkbox').forEach(cb => { if(!cb.checked) todas = false; }); master.checked = todas; }
-        
-        function atualizarInterfacePrint() {
-            const isCupom = document.getElementById('printFormato').value === 'cupom';
-            document.getElementById('areaEscolhaColunas').style.display = isCupom ? 'none' : 'block';
+            togglePrintModoCompra(); // Ajusta a visualização baseado no dropdown
         }
 
+        function togglePrintModoCompra() {
+            const isCompra = document.getElementById('printTipoRelatorio').value === 'compra';
+            const searchInput = document.getElementById('searchPrintInput').value;
+            
+            // Oculta/Mostra elementos específicos
+            document.getElementById('areaObsCompra').style.display = isCompra ? 'flex' : 'none';
+            document.getElementById('areaFiltroEstoque').style.display = isCompra ? 'none' : 'flex';
+            
+            // Colunas sugeridas para modo de compra
+            if(isCompra) {
+                document.getElementById('colCat').checked = false;
+                document.getElementById('colLocal').checked = false;
+                document.getElementById('colEst').checked = false;
+                document.getElementById('colMin').checked = false;
+                document.getElementById('colPreco').checked = false;
+                document.getElementById('colConf').checked = false;
+                document.getElementById('colFoto').checked = true;
+            }
+
+            // Exibe a caixinha de quantidade e desmarca itens se estiver no modo compra para começar limpo
+            document.querySelectorAll('.print-qtd-input').forEach(input => {
+                input.style.display = isCompra ? 'block' : 'none';
+            });
+            
+            // Se mudou pra compra e não pesquisou nada, desmarca tudo pra facilitar
+            if(isCompra && !searchInput) {
+                document.querySelectorAll('.print-cat-parent-checkbox, .print-item-child-checkbox').forEach(cb => cb.checked = false);
+            }
+        }
+
+        function filtrarBuscaPrint() {
+            const termo = document.getElementById('searchPrintInput').value.toLowerCase();
+            document.querySelectorAll('.print-item-wrapper').forEach(wrapper => {
+                const searchData = wrapper.getAttribute('data-busca');
+                if(!termo || searchData.includes(termo)) {
+                    wrapper.style.display = 'flex';
+                } else {
+                    wrapper.style.display = 'none';
+                }
+            });
+        }
+
+        function alternarFilhosDaCategoria(paiCheckbox) { const catNome = paiCheckbox.getAttribute('data-cat'); document.querySelectorAll(`.print-item-child-checkbox[data-parent-cat="${catNome}"]`).forEach(filho => { if(filho.closest('.print-item-wrapper').style.display !== 'none') filho.checked = paiCheckbox.checked; }); verificarStatusSelecaoMaster(); }
+        function sincronizarPaiComFilhos(catNome) { const pai = document.querySelector(`.print-cat-parent-checkbox[data-cat="${catNome}"]`); const filhos = document.querySelectorAll(`.print-item-child-checkbox[data-parent-cat="${catNome}"]`); let algum = false; filhos.forEach(f => { if(f.checked) algum = true; }); pai.checked = algum; verificarStatusSelecaoMaster(); }
+        function alternarTodasCategoriasImpressao(master) { document.querySelectorAll('.print-cat-parent-checkbox, .print-item-child-checkbox').forEach(cb => { if(cb.closest('.print-item-wrapper') && cb.closest('.print-item-wrapper').style.display !== 'none') cb.checked = master.checked; else if(!cb.closest('.print-item-wrapper')) cb.checked = master.checked; }); }
+        function verificarStatusSelecaoMaster() { const master = document.getElementById('printSelectAllCategoriesTrigger'); if(!master) return; let todas = true; document.querySelectorAll('.print-item-child-checkbox').forEach(cb => { if(!cb.checked && cb.closest('.print-item-wrapper').style.display !== 'none') todas = false; }); master.checked = todas; }
+
         function executarMotorImpressao() {
-            const statusFiltro = document.getElementById('printFiltroStatus').value; 
-            const formato = document.getElementById('printFormato').value;
-            const idsItensAutorizados = []; document.querySelectorAll('.print-item-child-checkbox').forEach(cb => { if(cb.checked) idsItensAutorizados.push(cb.value); });
-            if (idsItensAutorizados.length === 0) return alert("Selecione ao menos um ativo.");
+            const tipoRelatorio = document.getElementById('printTipoRelatorio').value;
+            const idsItensAutorizados = []; 
+            document.querySelectorAll('.print-item-child-checkbox').forEach(cb => { if(cb.checked) idsItensAutorizados.push(cb.value); });
+            
+            if (idsItensAutorizados.length === 0) return alert("Selecione ao menos um produto na lista.");
             
             const tbody = document.getElementById('printSystemTableBody'); tbody.innerHTML = ''; 
-            document.getElementById('printSystemTimestamp').textContent = `Emitido em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`;
-            
-            const colFoto = document.getElementById('colFoto').checked; const colCod = document.getElementById('colCod').checked; const colDesc = document.getElementById('colDesc').checked; const colCat = document.getElementById('colCat').checked; const colLocal = document.getElementById('colLocal').checked; const colEst = document.getElementById('colEst').checked; const colMin = document.getElementById('colMin').checked; const colPreco = document.getElementById('colPreco').checked; const colConf = document.getElementById('colConf').checked;
-            
             const thead = document.getElementById('printTHead');
-            if(formato === 'cupom') {
-                document.getElementById('printDocTitle').textContent = "CONFERENCIA ESTOQUE"; thead.innerHTML = ``; 
+            document.getElementById('printSystemTimestamp').textContent = `Emissão: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`;
+            
+            const colFoto = document.getElementById('colFoto').checked; const colCod = document.getElementById('colCod').checked; const colCat = document.getElementById('colCat').checked; const colLocal = document.getElementById('colLocal').checked; const colEst = document.getElementById('colEst').checked; const colMin = document.getElementById('colMin').checked; const colPreco = document.getElementById('colPreco').checked; const colConf = document.getElementById('colConf').checked;
+            
+            if (tipoRelatorio === 'compra') {
+                // 🛒 MOTOR: PEDIDO DE COMPRA
+                document.getElementById('printDocTitle').textContent = "📋 SOLICITAÇÃO DE COMPRA / COTAÇÃO";
+                
+                let thHTML = `<tr>`;
+                if(colFoto) thHTML += `<th style="width:10%; text-align:center;">Foto</th>`;
+                if(colCod) thHTML += `<th style="width:15%">Cód.</th>`;
+                thHTML += `<th style="width:${colFoto?'55%':'75%'}">Descrição do Material Solicitado</th>`;
+                thHTML += `<th style="width:20%; text-align:center;">Qtd. Desejada</th></tr>`;
+                thead.innerHTML = thHTML;
+
+                dbItems.forEach(item => {
+                    if (!idsItensAutorizados.includes(String(item.id))) return;
+                    const qtdInput = document.querySelector(`.print-qtd-input[data-id="${item.id}"]`);
+                    const qtdDesejada = qtdInput ? (parseInt(qtdInput.value) || 1) : 1;
+
+                    let tr = `<tr>`;
+                    if(colFoto) {
+                        const imgRender = item.foto ? `<img src="${item.foto}" style="width:45px; height:45px; border-radius:4px; object-fit:cover;">` : `<div style="width:45px; height:45px; display:inline-flex; align-items:center; justify-content:center; border:1px solid #ccc; border-radius:4px; font-size:22px;">${obterIconeAutomatico(item.nome)}</div>`;
+                        tr += `<td style="text-align:center;">${imgRender}</td>`;
+                    }
+                    if(colCod) tr += `<td><b>${item.codigo || '-'}</b></td>`;
+                    tr += `<td style="font-size:14px;">${item.nome}</td>`;
+                    tr += `<td style="text-align:center; font-size:20px; font-weight:bold; color:#000;">${qtdDesejada}</td></tr>`;
+                    tbody.innerHTML += tr;
+                });
+
+                const obs = document.getElementById('printObsCompra').value.trim();
+                if(obs) {
+                    const colSpanSize = 2 + (colFoto ? 1 : 0) + (colCod ? 1 : 0);
+                    tbody.innerHTML += `<tr><td colspan="${colSpanSize}" style="padding:15px; background:#f9f9f9; border-top:2px solid #000;"><b>Observações do Pedido:</b><br>${obs}</td></tr>`;
+                }
+
             } else {
-                document.getElementById('printDocTitle').textContent = "TECSERVICE • Relatório Completo";
+                // 📦 MOTOR: RELATÓRIO DE ESTOQUE
+                const statusFiltro = document.getElementById('printFiltroStatus').value; 
+                document.getElementById('printDocTitle').textContent = "TECSERVICE • Relatório de Estoque";
+                
                 let thHTML = `<tr>`;
                 if(colFoto) thHTML += `<th class="col-print-img">Foto</th>`;
                 if(colCod) thHTML += `<th class="col-print-cod">Cód.</th>`;
-                if(colDesc) thHTML += `<th class="col-print-desc">Especificação / Marca</th>`;
+                thHTML += `<th class="col-print-desc">Especificação / Marca</th>`;
                 if(colCat) thHTML += `<th class="col-print-cat">Categoria</th>`;
                 if(colLocal) thHTML += `<th class="col-print-cat">Local</th>`;
                 if(colEst) thHTML += `<th class="col-print-num">Est. Atual</th>`;
@@ -1144,32 +1180,17 @@
                 if(colConf) thHTML += `<th class="field-blank">Conf. Física</th>`;
                 thHTML += `</tr>`;
                 thead.innerHTML = thHTML;
-            }
 
-            let count = 0;
-            dbItems.forEach(item => {
-                const critico = (parseInt(item.atual)||0) < (parseInt(item.minimo)||0); 
-                if (!idsItensAutorizados.includes(String(item.id))) return; 
-                if (statusFiltro === 'criticos' && !critico) return; 
-                count++;
-                
-                if (formato === 'cupom') {
-                    let tr = `<tr>`;
-                    if(colDesc) tr += `<td class="col-print-desc">${item.nome||''}</td>`;
-                    let subtitulos = [];
-                    if(colLocal) subtitulos.push(`Loc: ${item.localizacao || '-'}`);
-                    if(colCod) subtitulos.push(`Cód: ${item.codigo || '-'}`);
-                    if(subtitulos.length > 0) tr += `<td>${subtitulos.join(' | ')}</td>`;
-                    if(colEst) tr += `<td>Estoque Sistema: <b>${item.atual||0} ${item.unidade||''}</b></td>`;
-                    if(colConf) tr += `<td>Real: [ _______ ]</td>`;
-                    tr += `</tr>`;
-                    tbody.innerHTML += tr;
-                } else {
+                dbItems.forEach(item => {
+                    const critico = (parseInt(item.atual)||0) < (parseInt(item.minimo)||0); 
+                    if (!idsItensAutorizados.includes(String(item.id))) return; 
+                    if (statusFiltro === 'criticos' && !critico) return; 
+                    
                     const imgCellContent = item.foto ? `<div class="print-img-box"><img src="${item.foto}"></div>` : `<div class="print-img-box"><span>${obterIconeAutomatico(String(item.nome||''))}</span></div>`;
                     let tr = `<tr>`;
                     if(colFoto) tr += `<td class="col-print-img">${imgCellContent}</td>`;
                     if(colCod) tr += `<td class="col-print-cod"><b>${item.codigo || '-'}</b></td>`;
-                    if(colDesc) tr += `<td class="col-print-desc"><strong>${item.nome||'-'}</strong><br><small style="font-size:8px;">Marca: ${item.marca || 'Genérica'}</small></td>`;
+                    tr += `<td class="col-print-desc"><strong>${item.nome||'-'}</strong><br><small style="font-size:8px;">Marca: ${item.marca || 'Genérica'}</small></td>`;
                     if(colCat) tr += `<td class="col-print-cat">${item.categoria || '-'}</td>`;
                     if(colLocal) tr += `<td class="col-print-cat">${item.localizacao || '-'}</td>`;
                     if(colEst) tr += `<td class="col-print-num" style="font-weight:bold;">${item.atual||0}</td>`;
@@ -1178,14 +1199,21 @@
                     if(colConf) tr += `<td class="field-blank">___________</td>`;
                     tr += `</tr>`;
                     tbody.innerHTML += tr;
-                }
-            });
+                });
+            }
 
-            if(count === 0) return alert("Nenhum item localizado."); 
             fecharModal('modalPrintOverlay'); 
-            document.body.className = formato === 'cupom' ? 'printing print-cupom' : 'printing print-a4';
+            document.body.className = 'printing print-a4';
             window.print();
-            setTimeout(() => { document.body.className = 'light'; }, 500); 
+            
+            setTimeout(() => { 
+                document.body.className = 'light'; 
+                // Se foi compra, desmarca os itens da tela inicial para não sujar o painel
+                if(tipoRelatorio === 'compra') {
+                    dbItems.forEach(i => i.checked = false);
+                    atualizarInterfaceCompleta();
+                }
+            }, 500); 
         }
 
         // 🟢 RENDERIZAÇÃO ESTOQUE 🟢
@@ -1680,13 +1708,21 @@
                 .catch(err => console.log('Falha no App Offline', err));
             });
         }       
-        // 🤖 MOTOR DA IA COM AUTONOMIA TOTAL (SUPER-AGENTE DE ESTOQUE V2) 🤖
+        
+        // 🤖 MOTOR DA IA COM AUTONOMIA TOTAL (SUPER-AGENTE DE ESTOQUE V3 - BLINDADO) 🤖
         const chaveInvertida = "VGzYyfrER35bryxH2BmKncyRYF3bydGW58jwcbaP6i4YfiD385ol_ksg"; 
         const GROQ_API_KEY = chaveInvertida.split('').reverse().join('');
         
         function toggleChat() {
             const chat = document.getElementById('iaChatWindow');
             chat.classList.toggle('active');
+        }
+
+        function escapeHTML(texto) {
+            return texto.replace(/[&<>'"]/g, function(tag) {
+                const chars = { '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' };
+                return chars[tag] || tag;
+            });
         }
 
         async function enviarMsgIA() {
@@ -1697,7 +1733,7 @@
             if(!msgUsuario) return;
 
             const chatBody = document.getElementById('iaChatBody');
-            chatBody.innerHTML += `<div class="chat-msg user">${msgUsuario}</div>`;
+            chatBody.innerHTML += `<div class="chat-msg user">${escapeHTML(msgUsuario)}</div>`;
             inputEl.value = '';
             chatBody.scrollTop = chatBody.scrollHeight;
 
@@ -1708,21 +1744,21 @@
             const locaisResumidos = dbLocais.map(l => `${l.nome} (${l.tipo})`).join(', ');
 
             const promptSistema = `Você é o assistente logístico super-agente do sistema TecCheck da TecService. 
-            Você tem AUTONOMIA TOTAL para interagir com o banco de dados e deve ser prestativa.
+            Você tem AUTONOMIA TOTAL para interagir com o banco de dados e deve ser prestativo.
 
             MUITO IMPORTANTE:
-            Para executar ações no sistema, você DEVE gerar um ou mais comandos no formato exato abaixo.
-            NUNCA digite os comandos soltos como exemplos na conversa. SÓ digite o comando se for para alterar algo DE FATO a pedido do usuário.
+            Para executar ações no sistema, você DEVE gerar comandos no formato exato abaixo.
+            NUNCA digite os comandos soltos como exemplos. SÓ digite o comando se for para alterar algo DE FATO.
+            NÃO use "R$" dentro dos comandos numéricos. Use apenas os números.
 
             LISTA RESTRITA DE COMANDOS:
-            [EXEC:CRIAR_ITEM|Nome do Produto|Quantidade|Nome do Local]
-            [EXEC:MUDAR_QTD|Nome Exato|Nova Quantidade Total (faça a conta matemática)]
-            [EXEC:ALTERAR_PRECO|Nome Exato|Novo Valor Unitário (somente numero com ponto, ex: 10.50)]
+            [EXEC:CRIAR_ITEM|Nome do Produto|Quantidade Numérica|Nome do Local]
+            [EXEC:MUDAR_QTD|Nome Exato|Nova Quantidade Total Calculada]
+            [EXEC:ALTERAR_PRECO|Nome Exato|Novo Valor Unitário Decimal]
             [EXEC:RENOMEAR|Nome Antigo|Nome Novo]
-            [EXEC:CRIAR_LOCAL|Nome do Local|Tipo (Caixa ou Prateleira)]
+            [EXEC:CRIAR_LOCAL|Nome do Local|Tipo] (Tipo = Caixa ou Prateleira)
             [EXEC:QRCODE|Nome do Produto ou Local]
 
-            Responda amigavelmente primeiro. Se for uma saudação, apenas dê oi. Se o usuário pedir ação, adicione os comandos no final.
             Dados atuais - Itens: [${inventarioResumido}]
             Dados atuais - Locais: [${locaisResumidos}]`;
 
@@ -1752,8 +1788,7 @@
                 
                 document.getElementById('iaDigitando').remove();
 
-                // ⚡ NOVO MOTOR DE INTERCEPTAÇÃO ESTRITA ⚡
-                const regexExec = /\[EXEC:([^\]]+)\]/gi;
+                const regexExec = /\[EXEC:\s*([^\]]+)\]/gi;
                 let match;
                 
                 while ((match = regexExec.exec(respostaIA)) !== null) {
@@ -1763,7 +1798,7 @@
 
                     if (acao === "CRIAR_ITEM" && parts.length >= 4) {
                         const nomeItem = parts[1];
-                        const qtdItem = parseInt(parts[2]) || 0;
+                        const qtdItem = parseInt(parts[2].replace(/[^\d]/g, '')) || 0;
                         const locItem = parts[3];
                         const newId = "ATV-IA-" + Date.now().toString() + Math.floor(Math.random()*1000);
                         
@@ -1776,8 +1811,9 @@
                     }
                     else if (acao === "MUDAR_QTD" && parts.length >= 3) {
                         const nomeAlvo = parts[1];
-                        const qtdFinal = parseInt(parts[2]) || 0;
-                        const item = dbItems.find(i => String(i.nome).toLowerCase().includes(nomeAlvo.toLowerCase()));
+                        const qtdFinal = parseInt(parts[2].replace(/[^\d]/g, '')) || 0;
+                        const item = dbItems.find(i => String(i.nome).toLowerCase() === nomeAlvo.toLowerCase() || String(i.nome).toLowerCase().includes(nomeAlvo.toLowerCase()));
+                        
                         if(item) {
                             item.atual = qtdFinal;
                             db.collection("tec_items").doc(String(item.id)).update({ atual: qtdFinal });
@@ -1789,9 +1825,11 @@
                     }
                     else if (acao === "ALTERAR_PRECO" && parts.length >= 3) {
                         const nomeAlvo = parts[1];
-                        // Garante que o valor entra como número
-                        const novoPreco = parseFloat(parts[2].replace(',', '.')) || 0; 
-                        const item = dbItems.find(i => String(i.nome).toLowerCase().includes(nomeAlvo.toLowerCase()));
+                        const rawPrice = parts[2].replace(/[^\d.,]/g, '').replace(',', '.');
+                        const novoPreco = parseFloat(rawPrice) || 0; 
+                        
+                        const item = dbItems.find(i => String(i.nome).toLowerCase() === nomeAlvo.toLowerCase() || String(i.nome).toLowerCase().includes(nomeAlvo.toLowerCase()));
+                        
                         if(item) {
                             item.preco = novoPreco;
                             db.collection("tec_items").doc(String(item.id)).update({ preco: novoPreco });
@@ -1804,7 +1842,7 @@
                     else if (acao === "RENOMEAR" && parts.length >= 3) {
                         const nomeAntigo = parts[1];
                         const nomeNovo = parts[2];
-                        const item = dbItems.find(i => String(i.nome).toLowerCase().includes(nomeAntigo.toLowerCase()));
+                        const item = dbItems.find(i => String(i.nome).toLowerCase() === nomeAntigo.toLowerCase() || String(i.nome).toLowerCase().includes(nomeAntigo.toLowerCase()));
                         if(item) {
                             item.nome = nomeNovo;
                             db.collection("tec_items").doc(String(item.id)).update({ nome: nomeNovo });
@@ -1843,10 +1881,8 @@
                     }
                 }
 
-                // Remove cirurgicamente TODOS os comandos [EXEC:...] invisíveis da resposta em texto para não sujar a tela
-                let textoHigienizado = respostaIA.replace(/\[EXEC:[^\]]+\]/gi, '').trim();
+                let textoHigienizado = respostaIA.replace(/\[EXEC:\s*[^\]]+\]/gi, '').trim();
                 
-                // Monta a caixa visual de logs se houver ações executadas
                 let htmlFinal = textoHigienizado;
                 if(acoesExecutadas.length > 0) {
                     htmlFinal += `<br><br><div style="font-size:13px; background:var(--card); padding:10px; border-radius:8px; border-left:4px solid var(--accent); display:flex; flex-direction:column; gap:6px;">` + acoesExecutadas.join('') + `</div>`;
@@ -1856,7 +1892,7 @@
                 chatBody.scrollTop = chatBody.scrollHeight;
 
                 if (interfacePrecisaAtualizar) {
-                    atualizarInterfaceCompleta(); // Se a IA mudou algo, a tela principal reflete a mudança no mesmo segundo!
+                    atualizarInterfaceCompleta(); 
                 }
                 
             } catch (error) {
@@ -1866,20 +1902,5 @@
             }
         }
     </script>
-    <!-- 🤖 CHATBOT WIDGET -->
-    <div class="chat-widget-btn area-normal-sistema" onclick="toggleChat()">✨</div>
-    <div class="chat-window area-normal-sistema" id="iaChatWindow">
-        <div class="chat-header">
-            <span>✨ Assistente de Estoque IA</span>
-            <button class="btn-icon" style="color:#fff;" onclick="toggleChat()">✕</button>
-        </div>
-        <div class="chat-body" id="iaChatBody">
-            <div class="chat-msg ai">Olá! Sou sua IA de estoque. Pergunte-me qualquer coisa sobre os materiais, quantidades ou fornecedores do sistema!</div>
-        </div>
-        <div class="chat-input-area">
-            <input type="text" id="iaChatInput" placeholder="Ex: Quantos papéis A4 temos?..." onkeypress="if(event.key === 'Enter') enviarMsgIA()">
-            <button onclick="enviarMsgIA()">Enviar</button>
-        </div>
-    </div>
 </body>
 </html>
