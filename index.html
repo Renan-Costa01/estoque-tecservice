@@ -1902,5 +1902,21 @@
             }
         }
     </script>
+    <!-- 🤖 CHATBOT WIDGET -->
+    <div class="chat-widget-btn area-normal-sistema" onclick="toggleChat()">✨</div>
+    <div class="chat-window area-normal-sistema" id="iaChatWindow">
+        <div class="chat-header">
+            <span>✨ Assistente de Estoque IA</span>
+            <button class="btn-icon" style="color:#fff;" onclick="toggleChat()">✕</button>
+        </div>
+        <div class="chat-body" id="iaChatBody">
+            <div class="chat-msg ai">Olá! Sou sua IA de estoque. Pergunte-me qualquer coisa sobre os materiais, quantidades ou fornecedores do sistema!</div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="iaChatInput" placeholder="Ex: Crie o produto Lápis com 10 unidades..." onkeypress="if(event.key === 'Enter') enviarMsgIA()">
+            <button onclick="enviarMsgIA()">Enviar</button>
+        </div>
+    </div>
+    
 </body>
 </html>
