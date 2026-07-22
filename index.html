@@ -1696,16 +1696,27 @@
             inputEl.value = '';
             chatBody.scrollTop = chatBody.scrollHeight;
 
-            chatBody.innerHTML += `<div class="chat-msg ai" id="iaDigitando">Pensando...</div>`;
+            chatBody.innerHTML += `<div class="chat-msg ai" id="iaDigitando">Processando comandos no sistema...</div>`;
             chatBody.scrollTop = chatBody.scrollHeight;
 
-            // Transforma o estoque em texto para a IA cruzar os dados
-            const inventarioResumido = dbItems.map(i => `${i.nome} (Cód: ${i.codigo||'-'}): ${i.atual} ${i.unidade||''} na ${i.localizacao||'Geral'}`).join(' | ');
+            // Mapeando dados para a IA ter o contexto absoluto
+            const inventarioResumido = dbItems.map(i => `${i.nome} (ID: ${i.id}, Cód: ${i.codigo||'-'}): ${i.atual} ${i.unidade||'un'} na ${i.localizacao||'Geral'}`).join(' | ');
+            const locaisResumidos = dbLocais.map(l => `${l.nome} (${l.tipo})`).join(', ');
 
-            const promptSistema = `Você é o assistente logístico inteligente do sistema TecCheck da TecService. 
-            Responda de forma direta, educada e prestativa. 
-            CONTEXTO INTELIGENTE: Entenda sinônimos e marcas. Se perguntarem por "caneta bic" e houver "caneta azul" no estoque, associe corretamente informando o item. Se mandarem saudações (como "oi" ou "tudo bem"), responda amigavelmente.
-            Baseie-se nestes dados atuais do estoque: [${inventarioResumido}].`;
+            const promptSistema = `Você é o assistente logístico super-agente do sistema TecCheck da TecService. 
+            Você tem AUTONOMIA TOTAL para alterar o banco de dados.
+
+            REGRAS DE AÇÃO (Insira os comandos ocultos na sua resposta para agir no sistema):
+            1. Criar Produto: [CMD_CRIAR_ITEM: Nome | Quantidade | Localização]
+            2. Atualizar Estoque (Fazer a conta final): [CMD_MUDAR_QTD: Nome Exato | Nova Quantidade Calculada]
+            3. Renomear Produto: [CMD_RENOMEAR_ITEM: Nome Antigo | Nome Novo]
+            4. Criar Local (Caixa/Prateleira): [CMD_CRIAR_LOCAL: Nome do Local | Tipo] (Tipo deve ser "Caixa" ou "Prateleira")
+            5. Mostrar QR Code: [CMD_QRCODE: Nome do Item ou Local]
+
+            Você pode executar vários comandos na mesma resposta. Seja amigável e depois execute os comandos de forma invisível.
+            
+            Dados atuais - Itens: [${inventarioResumido}]
+            Dados atuais - Locais: [${locaisResumidos}]`;
 
             try {
                 const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -1720,25 +1731,116 @@
                             { role: "system", content: promptSistema },
                             { role: "user", content: msgUsuario }
                         ],
-                        temperature: 0.3
+                        temperature: 0.1
                     })
                 });
                 
                 const data = await response.json();
+                if(data.error) throw new Error(data.error.message);
+
+                let respostaIA = data.choices[0].message.content;
+                let mensagemFinalParaUsuario = respostaIA;
+                let interfacePrecisaAtualizar = false;
                 
-                if(data.error) {
-                    throw new Error(data.error.message);
+                document.getElementById('iaDigitando').remove();
+
+                // ⚡ 1. MOTOR DE INTERCEPTAÇÃO: CRIAR ITEM
+                const regexCriarItem = /\[CMD_CRIAR_ITEM:\s*(.+?)\s*\|\s*(\d+)\s*\|\s*(.+?)\]/gi;
+                let match;
+                while ((match = regexCriarItem.exec(respostaIA)) !== null) {
+                    const nomeItem = match[1].trim();
+                    const qtdItem = parseInt(match[2]);
+                    const locItem = match[3].trim();
+                    const newId = "ATV-IA-" + Date.now().toString() + Math.floor(Math.random()*1000);
+                    
+                    let payloadItem = { codigo: "GERADO-IA", marca: "Automático", nome: nomeItem, localizacao: locItem, categoria: "Geral", unidade: "un", fornecedor: "Nenhum", preco: 0, atual: qtdItem, minimo: 0, foto: "", id: newId, checked: false };
+                    dbItems.push(payloadItem);
+                    db.collection("tec_items").doc(newId).set(payloadItem);
+                    
+                    mensagemFinalParaUsuario = mensagemFinalParaUsuario.replace(match[0], `<br><span style="color:var(--green)"><b>✅ Adicionado:</b> Item '${nomeItem}' (${qtdItem} un) na ${locItem}.</span>`);
+                    interfacePrecisaAtualizar = true;
                 }
 
-                const respostaIA = data.choices[0].message.content;
-                
-                document.getElementById('iaDigitando').remove();
-                chatBody.innerHTML += `<div class="chat-msg ai">${respostaIA}</div>`;
+                // ⚡ 2. MOTOR DE INTERCEPTAÇÃO: MUDAR QUANTIDADE
+                const regexMudarQtd = /\[CMD_MUDAR_QTD:\s*(.+?)\s*\|\s*(\d+)\]/gi;
+                while ((match = regexMudarQtd.exec(respostaIA)) !== null) {
+                    const nomeAlvo = match[1].trim();
+                    const qtdFinal = parseInt(match[2]);
+                    const item = dbItems.find(i => String(i.nome).toLowerCase().includes(nomeAlvo.toLowerCase()));
+                    if(item) {
+                        item.atual = qtdFinal;
+                        db.collection("tec_items").doc(String(item.id)).update({ atual: qtdFinal });
+                        mensagemFinalParaUsuario = mensagemFinalParaUsuario.replace(match[0], `<br><span style="color:var(--accent)"><b>⚡ Atualizado:</b> Estoque de '${item.nome}' ajustado para ${qtdFinal}.</span>`);
+                        interfacePrecisaAtualizar = true;
+                    } else {
+                        mensagemFinalParaUsuario = mensagemFinalParaUsuario.replace(match[0], `<br><span style="color:var(--red)"><b>❌ Erro:</b> Não encontrei o item '${nomeAlvo}'.</span>`);
+                    }
+                }
+
+                // ⚡ 3. MOTOR DE INTERCEPTAÇÃO: RENOMEAR ITEM
+                const regexRenomear = /\[CMD_RENOMEAR_ITEM:\s*(.+?)\s*\|\s*(.+?)\]/gi;
+                while ((match = regexRenomear.exec(respostaIA)) !== null) {
+                    const nomeAntigo = match[1].trim();
+                    const nomeNovo = match[2].trim();
+                    const item = dbItems.find(i => String(i.nome).toLowerCase().includes(nomeAntigo.toLowerCase()));
+                    if(item) {
+                        item.nome = nomeNovo;
+                        db.collection("tec_items").doc(String(item.id)).update({ nome: nomeNovo });
+                        mensagemFinalParaUsuario = mensagemFinalParaUsuario.replace(match[0], `<br><span style="color:var(--accent)"><b>✏️ Renomeado:</b> Produto agora se chama '${nomeNovo}'.</span>`);
+                        interfacePrecisaAtualizar = true;
+                    }
+                }
+
+                // ⚡ 4. MOTOR DE INTERCEPTAÇÃO: CRIAR LOCAL (Caixa/Prateleira)
+                const regexCriarLocal = /\[CMD_CRIAR_LOCAL:\s*(.+?)\s*\|\s*(.+?)\]/gi;
+                while ((match = regexCriarLocal.exec(respostaIA)) !== null) {
+                    const nomeLoc = match[1].trim();
+                    const tipoLoc = match[2].trim();
+                    if(!dbLocais.find(l => String(l.nome).toLowerCase() === nomeLoc.toLowerCase())) {
+                        dbLocais.push({ id: "LOC-IA-" + Date.now().toString(), nome: nomeLoc, tipo: tipoLoc });
+                        salvarConfigNaNuvem(); // Salva Locais no Firebase
+                        mensagemFinalParaUsuario = mensagemFinalParaUsuario.replace(match[0], `<br><span style="color:var(--green)"><b>📦 Local Criado:</b> '${nomeLoc}' (${tipoLoc}) registrado com sucesso.</span>`);
+                        interfacePrecisaAtualizar = true;
+                    } else {
+                        mensagemFinalParaUsuario = mensagemFinalParaUsuario.replace(match[0], `<br><span style="color:var(--amber)"><b>⚠️ Aviso:</b> O local '${nomeLoc}' já existe.</span>`);
+                    }
+                }
+
+                // ⚡ 5. MOTOR DE INTERCEPTAÇÃO: GERAR QR CODE NA TELA
+                const regexQR = /\[CMD_QRCODE:\s*(.+?)\]/gi;
+                while ((match = regexQR.exec(respostaIA)) !== null) {
+                    const alvo = match[1].trim();
+                    let qrData = alvo;
+                    let label = alvo;
+                    
+                    const item = dbItems.find(i => String(i.nome).toLowerCase().includes(alvo.toLowerCase()) || i.id === alvo);
+                    const loc = dbLocais.find(l => String(l.nome).toLowerCase().includes(alvo.toLowerCase()) || l.id === alvo);
+                    
+                    if(item) { qrData = item.id; label = item.nome; }
+                    else if (loc) { qrData = loc.id; label = loc.nome; }
+
+                    // Gera a imagem do QR code dinamicamente via API pública
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrData)}&margin=10`;
+                    
+                    const htmlQR = `<br><div style="text-align:center; margin-top:10px; padding:10px; background:#fff; border-radius:10px; border:2px solid var(--accent); display:inline-block;">
+                        <p style="font-size:12px; font-weight:bold; color:#000; margin-bottom:5px;">${label}</p>
+                        <img src="${qrUrl}" alt="QR Code" style="width:130px; height:130px; border-radius:8px;">
+                    </div>`;
+
+                    mensagemFinalParaUsuario = mensagemFinalParaUsuario.replace(match[0], htmlQR);
+                }
+
+                // Joga a mensagem final higienizada na tela
+                chatBody.innerHTML += `<div class="chat-msg ai">${mensagemFinalParaUsuario}</div>`;
                 chatBody.scrollTop = chatBody.scrollHeight;
+
+                if (interfacePrecisaAtualizar) {
+                    atualizarInterfaceCompleta(); // Se a IA mudou algo, a tela pisca e atualiza sozinha!
+                }
                 
             } catch (error) {
-                document.getElementById('iaDigitando').remove();
-                chatBody.innerHTML += `<div class="chat-msg ai" style="color:var(--red);">Erro na conexão com a IA.</div>`;
+                if(document.getElementById('iaDigitando')) document.getElementById('iaDigitando').remove();
+                chatBody.innerHTML += `<div class="chat-msg ai" style="color:var(--red);">Erro na operação da inteligência artificial.</div>`;
                 console.error(error);
             }
         }
